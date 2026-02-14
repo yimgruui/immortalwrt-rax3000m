@@ -12,8 +12,8 @@ name: rax3000m-immo
 on:
   repository_dispatch:
   workflow_dispatch:
-  schedule:
-    - cron: 0 17 ? * 3
+  #schedule:
+    #- cron: 0 17 ? * 3
 
 env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt
@@ -129,11 +129,11 @@ jobs:
         rm -rf sha256sums
         rm -rf profiles.json
         rm -rf version.buildinfo
-        #rm -rf immortalwrt-mediatek-mt7981-cmcc_rax3000m.manifest
-        #rm -rf immortalwrt-mediatek-mt7981-cmcc_rax3000m-initramfs-kernel.bin
-        #rm -rf immortalwrt-mediatek-mt7981-cmcc_rax3000m-squashfs-factory.bin
-        #mv config.buildinfo rax3000m.buildinfo
-        #mv immortalwrt-mediatek-mt7981-cmcc_rax3000m-squashfs-sysupgrade.bin immortalwrt-2102-cmcc_rax3000m-nand-squashfs-sysupgrade.bin
+        rm -rf *.manifest
+        rm -rf *.bin
+        rm -rf *.fip
+        rm -rf *.recovery.itb
+        mv config.buildinfo rax3000m.buildinfo
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
 
@@ -141,7 +141,7 @@ jobs:
       id: tag
       if: env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
-        echo "release_tag=$(date +"%Y.%m.%d")-immo" >> $GITHUB_OUTPUT
+        echo "release_tag=$(date +"%Y.%m.%d")" >> $GITHUB_OUTPUT
         echo "release_date=$(date +"%Y.%m.%d")" >> $GITHUB_OUTPUT
         touch release.txt
         echo "后台地址：192.168.11.1
@@ -149,11 +149,11 @@ jobs:
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Upload firmware directory
-      uses: actions/upload-artifact@main
+      uses: actions/upload-artifact@6.0.0
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
-        name: OpenWrt_firmware${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
-        path: ${{ env.FIRMWARE }}
+        name: OpenWrt_firmware${ env.DEVICE_NAME }${ env.FILE_DATE }
+        path: ${ env.FIRMWARE }
 
     - name: Upload firmware to release
       uses: softprops/action-gh-release@v2.5
@@ -164,7 +164,7 @@ jobs:
         name: ${{ steps.tag.outputs.release_date }} immortalwrt
         tag_name: ${{ steps.tag.outputs.release_tag }}
         body_path: release.txt
-        files: ${{ env.FIRMWARE }}/*
+        files: ${ env.FIRMWARE }/*
 
     - name: Telegram notification
       if: steps.compile.outputs.status == 'success'
@@ -172,13 +172,13 @@ jobs:
         curl -k --data chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" --data "text=亲爱的✨主人✨：您使用 immortalwrt-rax3000m 编译的 immortalwrt-rax3000m 固件顺利编译完成了！💐" "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage"
 
     - name: Delete workflow runs
-      uses: Mattraks/delete-workflow-runs@v2
+      uses: Mattraks/delete-workflow-runs@v2.1.0
       with:
           retain_days: 1
           keep_minimum_runs: 1
 
     - name: Remove old Releases
-      uses: dev-drprasad/delete-older-releases@v0.3.3
+      uses: dev-drprasad/delete-older-releases@v0.3.4
       if: env.UPLOAD_RELEASE == 'true' && !cancelled()
       with:
         keep_latest: 20
