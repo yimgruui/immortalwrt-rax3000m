@@ -31,7 +31,7 @@ git clone --depth=1 https://github.com/tty228/luci-app-wechatpush package/new/lu
 git clone https://github.com/kiddin9/kwrt-packages package/new/openwrt-packages
 
 ## Add luci-app-accesscontrol
-cp -r ~/kwrt-packages/luci-app-accesscontrol package/new/luci-app-accesscontrol
+cp -r ~/openwrt-packages/luci-app-accesscontrol package/new/luci-app-accesscontrol
 
 ## Add luci-app-autoreboot
 # mv package/new/openwrt-packages/luci-app-autoreboot package/new/luci-app-autoreboot
