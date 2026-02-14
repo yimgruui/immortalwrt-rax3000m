@@ -24,8 +24,6 @@ cp -f $GITHUB_WORKSPACE/bg1.jpg feeds/luci/themes/luci-theme-argon/htdocs/luci-s
 rm -rf feeds/luci/applications/luci-app-wechatpush
 git clone --depth=1 https://github.com/tty228/luci-app-wechatpush package/new/luci-app-wechatpush
 
-
-
 ####################################
 ## clone kiddin9/openwrt-packages仓库
 git clone https://github.com/kiddin9/kwrt-packages package/new/openwrt-packages
@@ -63,7 +61,7 @@ bash $GITHUB_WORKSPACE/scripts/nikki.sh
 bash $GITHUB_WORKSPACE/scripts/zsh.sh
 
 ## turboacc
-# curl -sSL https://raw.githubusercontent.com/chenmozhijin/turboacc/luci/add_turboacc.sh -o add_turboacc.sh && bash add_turboacc.sh --no-sfe
-curl -sSL https://raw.githubusercontent.com/mufeng05/turboacc/main/add_turboacc.sh -o add_turboacc.sh && bash add_turboacc.sh
+curl -sSL https://raw.githubusercontent.com/chenmozhijin/turboacc/luci/add_turboacc.sh -o add_turboacc.sh && bash add_turboacc.sh --no-sfe
+# curl -sSL https://raw.githubusercontent.com/mufeng05/turboacc/main/add_turboacc.sh -o add_turboacc.sh && bash add_turboacc.sh
 
 ls -1 package/new/
