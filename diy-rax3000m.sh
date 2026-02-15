@@ -44,8 +44,8 @@ mv package/new/openwrt-packages/luci-app-wolplus package/new/luci-app-wolplus
 ## Add luci-app-upnp
 rm -rf feeds/luci/applications/luci-app-upnp
 rm -rf feeds/packages/net/miniupnpd
-cp -r ~/kwrt-packages/miniupnpd package/new/miniupnpd
-cp -r ~/kwrt-packages/luci-app-upnp package/new/luci-app-upnp
+mv package/new/openwrt-packages/miniupnpd package/new/miniupnpd
+mv package/new/openwrt-packages/luci-app-upnp package/new/luci-app-upnp
 
 rm -rf package/new/openwrt-packages
 #################################
