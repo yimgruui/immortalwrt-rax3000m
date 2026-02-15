@@ -152,8 +152,8 @@ jobs:
       uses: actions/upload-artifact@main
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
-        name: OpenWrt_firmware${ env.DEVICE_NAME }${ env.FILE_DATE }
-        path: ${ env.FIRMWARE }
+        name: OpenWrt_firmware${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
+        path: ${{ env.FIRMWARE }}
 
     - name: Upload firmware to release
       uses: softprops/action-gh-release@v2.5.0
@@ -164,7 +164,7 @@ jobs:
         name: ${{ steps.tag.outputs.release_date }} immortalwrt
         tag_name: ${{ steps.tag.outputs.release_tag }}
         body_path: release.txt
-        files: ${ env.FIRMWARE }/*
+        files: ${{ env.FIRMWARE }}/*
 
     - name: Telegram notification
       if: steps.compile.outputs.status == 'success'
