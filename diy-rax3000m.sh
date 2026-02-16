@@ -24,6 +24,9 @@ cp -f $GITHUB_WORKSPACE/bg1.jpg feeds/luci/themes/luci-theme-argon/htdocs/luci-s
 rm -rf feeds/luci/applications/luci-app-wechatpush
 git clone --depth=1 https://github.com/tty228/luci-app-wechatpush package/new/luci-app-wechatpush
 
+## Add luci-app-adguardhome
+git clone https://github.com/OneNAS-space/luci-app-adguardhome package/new/luci-app-adguardhome
+
 ####################################
 ## clone kiddin9/openwrt-packages仓库
 git clone https://github.com/kiddin9/kwrt-packages package/new/openwrt-packages
