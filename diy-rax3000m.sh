@@ -25,7 +25,9 @@ rm -rf feeds/luci/applications/luci-app-wechatpush
 git clone --depth=1 https://github.com/tty228/luci-app-wechatpush package/new/luci-app-wechatpush
 
 ## Add luci-app-adguardhome
-git clone https://github.com/OneNAS-space/luci-app-adguardhome package/new/luci-app-adguardhome
+git clone https://github.com/Xiaokailnol/luci-app-adguardhome package/new/adguardhome
+mv package/new/adguardhome/luci-app-adguardhome package/new/luci-app-adguardhome
+rm -rf package/new/adguardhome
 
 ####################################
 ## clone kiddin9/openwrt-packages仓库
