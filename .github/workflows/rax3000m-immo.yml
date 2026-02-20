@@ -17,7 +17,7 @@ on:
 
 env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt
-  REPO_BRANCH: openwrt-24.10
+  REPO_BRANCH: openwrt-25.12
   #FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: rax3000m.config
   DIY_SH: diy-rax3000m.sh
