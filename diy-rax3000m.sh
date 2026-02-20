@@ -11,19 +11,21 @@ sed -i 's/192.168.1.1/192.168.11.1/g' package/base-files/files/bin/config_genera
 mkdir -p package/new
 
 ## 下载主题luci-theme-argon
-# git clone https://github.com/jerrykuku/luci-theme-argon.git package/new/luci-theme-argon
-# git clone https://github.com/jerrykuku/luci-app-argon-config.git package/new/luci-app-argon-config
+rm -rf feeds/luci/themes/luci-theme-argon
+rm -rf feeds/luci/applications/luci-app-argon-config
+git clone https://github.com/jerrykuku/luci-theme-argon.git package/new/luci-theme-argon
+git clone https://github.com/jerrykuku/luci-app-argon-config.git package/new/luci-app-argon-config
 ## 替换主题 bootstrap 为 argon
-# sed -i 's/luci-theme-bootstrap/luci-theme-argon/' ./feeds/luci/collections/luci-light/Makefile
+sed -i 's/luci-theme-bootstrap/luci-theme-argon/' ./feeds/luci/collections/luci-light/Makefile
 ## 修改argon背景图片
 rm -rf feeds/luci/themes/luci-theme-argon/htdocs/luci-static/argon/img/bg1.jpg
 cp -f $GITHUB_WORKSPACE/bg1.jpg feeds/luci/themes/luci-theme-argon/htdocs/luci-static/argon/img/bg1.jpg
 
 ## 下载主题luci-theme-aurora
-git clone https://github.com/eamonxg/luci-theme-aurora package/new/luci-theme-aurora
-git clone https://github.com/eamonxg/luci-app-aurora-config package/new/luci-app-aurora-config
+# git clone https://github.com/eamonxg/luci-theme-aurora package/new/luci-theme-aurora
+# git clone https://github.com/eamonxg/luci-app-aurora-config package/new/luci-app-aurora-config
 ## 替换主题 bootstrap 为 aurora
-sed -i 's/luci-theme-bootstrap/luci-theme-aurora/' ./feeds/luci/collections/luci-light/Makefile
+# sed -i 's/luci-theme-bootstrap/luci-theme-aurora/' ./feeds/luci/collections/luci-light/Makefile
 
 ## Add luci-app-wechatpush
 rm -rf feeds/luci/applications/luci-app-wechatpush
