@@ -23,7 +23,7 @@ cp -f $GITHUB_WORKSPACE/bg1.jpg feeds/luci/themes/luci-theme-argon/htdocs/luci-s
 git clone https://github.com/eamonxg/luci-theme-aurora package/new/luci-theme-aurora
 git clone https://github.com/eamonxg/luci-app-aurora-config package/new/luci-app-aurora-config
 ## 替换主题 bootstrap 为 aurora
-# sed -i 's/luci-theme-bootstrap/luci-theme-aurora/' ./feeds/luci/collections/luci-light/Makefile
+sed -i 's/luci-theme-bootstrap/luci-theme-aurora/' ./feeds/luci/collections/luci-light/Makefile
 
 ## Add luci-app-wechatpush
 rm -rf feeds/luci/applications/luci-app-wechatpush
