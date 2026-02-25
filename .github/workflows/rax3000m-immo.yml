@@ -16,7 +16,7 @@ on:
     #- cron: 0 17 ? * 3
 
 env:
-  REPO_URL: https://github.com/openwrt/openwrt
+  REPO_URL: https://github.com/immortalwrt/immortalwrt
   REPO_BRANCH: openwrt-25.12
   #FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: rax3000m.config
