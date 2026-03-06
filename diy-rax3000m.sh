@@ -39,7 +39,7 @@ rm -rf package/new/adguardhome
 
 ####################################
 ## clone kiddin9/openwrt-packages仓库
-git clone https://github.com/kiddin9/kwrt-packages package/new/openwrt-packages
+git clone https://github.com/kiddin9/op-packages package/new/openwrt-packages
 
 ## Add luci-app-ddns-go
 # rm -rf feeds/luci/applications/luci-app-ddns-go
