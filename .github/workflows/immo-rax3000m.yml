@@ -59,6 +59,15 @@ jobs:
         ./scripts/feeds update -a && ./scripts/feeds install -a
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
 
+    - name: 取回缓存 staging_dir
+      uses: actions/cache@v5
+      with:
+        path: |
+          openwrt/staging_dir
+        key: openwrt-toolchain-cache
+        restore-keys: |
+          openwrt-toolchain-cache
+
     - name: 加载自定义脚本
       run: |
         [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
@@ -74,15 +83,6 @@ jobs:
         make download -j8
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
-
-    - name: 取回缓存 staging_dir
-      uses: actions/cache@v5
-      with:
-        path: |
-          openwrt/staging_dir
-        key: openwrt-toolchain-cache
-        restore-keys: |
-          openwrt-toolchain-cache
 
     - name: 编译源码
       id: compile
