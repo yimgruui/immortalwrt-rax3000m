@@ -96,7 +96,7 @@ jobs:
  
     - name: 清理缓存
       run: |
-        cd $SOURCE_NAME
+        cd openwrt
         make clean
 
     - name: 缓存 staging_dir
