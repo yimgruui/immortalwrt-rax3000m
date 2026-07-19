@@ -10,7 +10,7 @@ env:
   REPO_URL: https://github.com/chasey-dev/immortalwrt-mt798x-rebase
   REPO_BRANCH: 25.12
   CONFIG_FILE: config/config-rax3000m
-  #DIY_SH: diy-rax3000m.sh
+  DIY_SH: sh/diy-rax3000m.sh
   TZ: Asia/Shanghai
 
 jobs:
@@ -71,9 +71,9 @@ jobs:
     - name: 加载自定义脚本
       run: |
         [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
-        #chmod +x $DIY_SH
+        chmod +x $DIY_SH
         cd openwrt
-        #$GITHUB_WORKSPACE/$DIY_SH
+        $GITHUB_WORKSPACE/$DIY_SH
 
     - name: 下载编译依赖
       id: package
