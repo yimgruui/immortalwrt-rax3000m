@@ -31,3 +31,6 @@ git clone https://github.com/nikkinikki-org/OpenWrt-nikki package/new/OpenWrt-ni
 mv package/new/OpenWrt-nikki/*nikki package/new/
 mv package/new/OpenWrt-nikki/mihomo* package/new/
 rm -rf package/new/OpenWrt-nikki
+
+echo "###"
+ls -1 package/new/
