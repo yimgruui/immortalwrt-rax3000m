@@ -18,8 +18,8 @@ sed -i 's/default Bootstrap theme/default Argon theme/g' feeds/luci/collections/
 mkdir -p package/new
 
 # luci-theme-argon
-rm -rf feed/luci/themes/luci-theme-argon
-rm -rf feed/luci/applications/luci-app-argon-config
+rm -rf feeds/luci/themes/luci-theme-argon
+rm -rf feeds/luci/applications/luci-app-argon-config
 git clone https://github.com/jerrykuku/luci-theme-argon.git package/new/luci-theme-argon
 git clone https://github.com/jerrykuku/luci-app-argon-config.git package/new/luci-app-argon-config
 rm -rf package/new/luci-theme-argon/htdocs/luci-static/argon/img/bg1.jpg
