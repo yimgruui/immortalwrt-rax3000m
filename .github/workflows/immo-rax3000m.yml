@@ -73,6 +73,7 @@ jobs:
         [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
         chmod +x $DIY_SH
         cd openwrt
+        find ./staging_dir/ -name '*' -exec touch {} \; >/dev/null 2>&1
         $GITHUB_WORKSPACE/$DIY_SH
 
     - name: 下载编译依赖
