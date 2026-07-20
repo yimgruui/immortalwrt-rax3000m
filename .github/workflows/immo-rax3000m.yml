@@ -115,7 +115,7 @@ jobs:
     - name: 生成发布标签
       id: tag
       run: |
-        echo "release_tag=$(date +"%Y.%m.%d")-immo" >> $GITHUB_OUTPUT
+        echo "release_tag=$(date +"%Y.%m.%d")" >> $GITHUB_OUTPUT
         touch release.txt
         echo "默认ip：192.168.11.1" >> release.txt
         echo "默认密码：无" >> release.txt
