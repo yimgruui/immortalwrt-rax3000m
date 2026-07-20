@@ -11,7 +11,7 @@ sed -i 's/;)\s*\\/; \\/' include/feeds.mk
 sed -i 's/192.168.1.1/192.168.11.1/g' package/base-files/files/bin/config_generate
 
 
-# 修改 argon 为默认主题,可根据你喜欢的修改成其他的（不选择那些会自动改变为默认主题的主题才有效果）
+# 修改 argon 为默认主题
 sed -i 's/luci-theme-bootstrap/luci-theme-argon/g' feeds/luci/collections/luci-light/Makefile
 sed -i 's/default Bootstrap theme/default Argon theme/g' feeds/luci/collections/luci-light/Makefile
 
