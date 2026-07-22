@@ -34,3 +34,5 @@ rm -rf package/new/OpenWrt-nikki
 
 echo "###"
 ls -1 package/new/
+
+bash $GITHUB_WORKSPACE/sh/nginx.sh
