@@ -135,6 +135,8 @@ jobs:
       with:
         retain_days: 1
         keep_minimum_runs: 2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Remove old Releases
       uses: gzk47/delete-older-releases@v0.3.5
