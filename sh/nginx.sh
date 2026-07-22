@@ -75,3 +75,10 @@ sed -i '/<br \/>/d' feeds/luci/modules/luci-compat/luasrc/view/cbi/full_valuefoo
 #golang 26.x
 rm -rf feeds/packages/lang/golang
 git clone https://github.com/sbwml/packages_lang_golang -b 26.x feeds/packages/lang/golang
+
+
+cp -rf $GITHUB_WORKSPACE/patch/diy/*.patch ./
+cp -rf $GITHUB_WORKSPACE/patch/luci/*.patch feeds/luci
+
+cp -rf $GITHUB_WORKSPACE/patch/nginx/luci.locations feeds/packages/net/nginx/files-luci-support
+cp -rf $GITHUB_WORKSPACE/patch/nginx/uci.conf.template feeds/packages/net/nginx-util/files
