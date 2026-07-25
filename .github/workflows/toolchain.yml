@@ -4,7 +4,7 @@ on:
   repository_dispatch:
   workflow_dispatch:
   schedule:
-    - cron: 0 18 * * 5 
+    - cron: 0 23 * * 5 
 
 env:
   REPO_URL: https://github.com/chasey-dev/immortalwrt-mt798x-rebase
