@@ -32,6 +32,9 @@ mv package/new/OpenWrt-nikki/*nikki package/new/
 mv package/new/OpenWrt-nikki/mihomo* package/new/
 rm -rf package/new/OpenWrt-nikki
 
+# luci-app-nginx-manager
+git clone https://github.com/hello-yunshu/luci-app-nginx-manager package/new/luci-app-nginx-manager
+
 echo "###"
 ls -1 package/new/
 
