@@ -35,6 +35,8 @@ jobs:
           python3-setuptools rsync swig unzip zlib1g-dev file wget \
           libelf-dev qemu-utils ccache
         sudo ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+        sudo mkdir -p /workdir
+        sudo chown $USER:$GROUPS /workdir
 
     - name: 克隆源代码
       working-directory: /workdir
