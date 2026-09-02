@@ -31,6 +31,7 @@ rm -rf feeds/luci/applications/luci-app-daed
 rm -rf feeds/packages/net/dae
 rm -rf feeds/packages/net/daed
 git clone https://github.com/QiuSimons/luci-app-daed package/new/dae
+git clone https://github.com/QiuSimons/vmlinux-btf package/new/vmlinux-btf
 
 # nikki
 # git clone https://github.com/nikkinikki-org/OpenWrt-nikki package/new/OpenWrt-nikki
