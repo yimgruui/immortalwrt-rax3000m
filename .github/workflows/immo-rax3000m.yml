@@ -9,7 +9,7 @@ on:
 env:
   REPO_URL: https://github.com/chasey-dev/immortalwrt-mt798x-rebase
   REPO_BRANCH: 25.12
-  CONFIG_FILE: config/rax3000m-nginx-daed.config
+  CONFIG_FILE: config/rax3000m-nginx.config
   DIY_SH: sh/diy-rax3000m.sh
   TZ: Asia/Shanghai
 
