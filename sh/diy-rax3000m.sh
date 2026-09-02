@@ -25,12 +25,16 @@ git clone https://github.com/jerrykuku/luci-app-argon-config.git package/new/luc
 rm -rf package/new/luci-theme-argon/htdocs/luci-static/argon/img/bg1.jpg
 cp -f $GITHUB_WORKSPACE/bg1.jpg package/new/luci-theme-argon/htdocs/luci-static/argon/img/bg1.jpg
 
+# luci-app-daed
+rm -rf feeds/luci/applications/luci-app-dae
+rm -rf feeds/luci/applications/luci-app-daed
+git clone https://github.com/QiuSimons/luci-app-daed package/new/dae
 
 # nikki
-git clone https://github.com/nikkinikki-org/OpenWrt-nikki package/new/OpenWrt-nikki
-mv package/new/OpenWrt-nikki/*nikki package/new/
-mv package/new/OpenWrt-nikki/mihomo* package/new/
-rm -rf package/new/OpenWrt-nikki
+# git clone https://github.com/nikkinikki-org/OpenWrt-nikki package/new/OpenWrt-nikki
+# mv package/new/OpenWrt-nikki/*nikki package/new/
+# mv package/new/OpenWrt-nikki/mihomo* package/new/
+# rm -rf package/new/OpenWrt-nikki
 
 # luci-app-nginx-manager
 git clone https://github.com/hello-yunshu/luci-app-nginx-manager package/new/luci-app-nginx-manager
