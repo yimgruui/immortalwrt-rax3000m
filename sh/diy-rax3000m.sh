@@ -28,6 +28,8 @@ cp -f $GITHUB_WORKSPACE/bg1.jpg package/new/luci-theme-argon/htdocs/luci-static/
 # luci-app-daed
 rm -rf feeds/luci/applications/luci-app-dae
 rm -rf feeds/luci/applications/luci-app-daed
+rm -rf feeds/packages/net/dae
+rm -rf feeds/packages/net/daed
 git clone https://github.com/QiuSimons/luci-app-daed package/new/dae
 
 # nikki
