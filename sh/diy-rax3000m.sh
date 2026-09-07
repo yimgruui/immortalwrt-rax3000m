@@ -25,6 +25,12 @@ git clone https://github.com/jerrykuku/luci-app-argon-config.git package/new/luc
 rm -rf package/new/luci-theme-argon/htdocs/luci-static/argon/img/bg1.jpg
 cp -f $GITHUB_WORKSPACE/bg1.jpg package/new/luci-theme-argon/htdocs/luci-static/argon/img/bg1.jpg
 
+# luci-app-adguardhome
+rm -rf feeds/luci/applications/luci-app-adguardhome
+git clone https://github.com/terrytyc/luci-app-adguardhome package/new/adguardhome
+mv package/new/adguardhome/luci-app-adguardhome package/new/luci-app-adguardhome
+rm -rf package/new/adguardhome
+
 # luci-app-daed
 # rm -rf feeds/luci/applications/luci-app-dae
 # rm -rf feeds/luci/applications/luci-app-daed
