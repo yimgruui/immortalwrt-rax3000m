@@ -44,10 +44,6 @@ git clone https://github.com/nikkinikki-org/OpenWrt-nikki package/new/OpenWrt-ni
 mv package/new/OpenWrt-nikki/*nikki package/new/
 mv package/new/OpenWrt-nikki/mihomo* package/new/
 rm -rf package/new/OpenWrt-nikki
-mkdir -p package/new/nikki/files/run
-wget -PO package/new/nikki/files/run/ https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat
-wget -PO package/new/nikki/files/run/ https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.metadb
-ls -1 package/new/nikki/files/run/
 
 # luci-app-nginx-manager
 git clone https://github.com/hello-yunshu/luci-app-nginx-manager package/new/luci-app-nginx-manager
