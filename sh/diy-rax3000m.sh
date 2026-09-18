@@ -31,6 +31,18 @@ git clone https://github.com/terrytyc/luci-app-adguardhome package/new/adguardho
 # mv package/new/adguardhome/luci-app-adguardhome package/new/luci-app-adguardhome
 # rm -rf package/new/adguardhome
 
+# luci-app-wechatpush
+rm -rf feeds/luci/applications/luci-app-wechatpush
+git clone https://github.com/tty228/luci-app-wechatpush package/new/luci-app-wechatpush
+
+# luci-app-upnp
+rm -rf feeds/luci/applications/luci-app-upnp
+rm -rf feeds/packages/net/miniupnpd
+git clone https://github.com/kiddin9/op-packages package/new/op-packages
+mv package/new/op-packages/luci-app-upnp package/new/luci-app-upnp
+mv package/new/op-packages/miniupnpd package/new/miniupnpd
+rm -rf package/new/op-packages
+
 # luci-app-daed
 # rm -rf feeds/luci/applications/luci-app-dae
 # rm -rf feeds/luci/applications/luci-app-daed
