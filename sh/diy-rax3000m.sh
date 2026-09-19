@@ -41,6 +41,11 @@ rm -rf feeds/packages/net/miniupnpd
 git clone https://github.com/kiddin9/op-packages package/new/op-packages
 mv package/new/op-packages/luci-app-upnp package/new/luci-app-upnp
 mv package/new/op-packages/miniupnpd package/new/miniupnpd
+# luci-app-mosdns
+rm -rf feeds/luci/applications/luci-app-mosdns
+rm -rf feeds/packages/net/mosdns
+mv package/new/op-packages/luci-app-mosdns package/new/luci-app-mosdns
+mv package/new/op-packages/mosdns package/new/mosdns
 rm -rf package/new/op-packages
 
 # luci-app-daed
