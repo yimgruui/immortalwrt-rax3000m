@@ -46,6 +46,7 @@ rm -rf feeds/luci/applications/luci-app-mosdns
 rm -rf feeds/packages/net/mosdns
 mv package/new/op-packages/luci-app-mosdns package/new/luci-app-mosdns
 mv package/new/op-packages/mosdns package/new/mosdns
+mv package/new/op-packages/geo2txt package/new/geo2txt
 rm -rf package/new/op-packages
 
 # luci-app-daed
