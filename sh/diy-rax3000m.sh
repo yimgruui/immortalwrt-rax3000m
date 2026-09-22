@@ -63,6 +63,9 @@ mv package/new/OpenWrt-nikki/*nikki package/new/
 mv package/new/OpenWrt-nikki/mihomo* package/new/
 rm -rf package/new/OpenWrt-nikki
 
+# luci-app-harbor-file
+git clone https://github.com/destan19/luci-app-harbor-file package/new/luci-app-harbor-file
+
 # luci-app-nginx-manager
 # git clone https://github.com/hello-yunshu/luci-app-nginx-manager package/new/luci-app-nginx-manager
 
