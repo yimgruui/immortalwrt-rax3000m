@@ -50,18 +50,18 @@ mv package/new/op-packages/geo2txt package/new/geo2txt
 rm -rf package/new/op-packages
 
 # luci-app-daed
-# rm -rf feeds/luci/applications/luci-app-dae
-# rm -rf feeds/luci/applications/luci-app-daed
-# rm -rf feeds/packages/net/dae
-# rm -rf feeds/packages/net/daed
-# git clone https://github.com/QiuSimons/luci-app-daed package/new/dae
+rm -rf feeds/luci/applications/luci-app-dae
+rm -rf feeds/luci/applications/luci-app-daed
+rm -rf feeds/packages/net/dae
+rm -rf feeds/packages/net/daed
+git clone https://github.com/kenzok8/openwrt-daede package/new/openwrt-daede
 # git clone https://github.com/QiuSimons/vmlinux-btf package/new/vmlinux-btf
 
 # nikki
-git clone https://github.com/nikkinikki-org/OpenWrt-nikki package/new/OpenWrt-nikki
-mv package/new/OpenWrt-nikki/*nikki package/new/
-mv package/new/OpenWrt-nikki/mihomo* package/new/
-rm -rf package/new/OpenWrt-nikki
+# git clone https://github.com/nikkinikki-org/OpenWrt-nikki package/new/OpenWrt-nikki
+# mv package/new/OpenWrt-nikki/*nikki package/new/
+# mv package/new/OpenWrt-nikki/mihomo* package/new/
+# rm -rf package/new/OpenWrt-nikki
 
 # luci-app-nginx-manager
 # git clone https://github.com/hello-yunshu/luci-app-nginx-manager package/new/luci-app-nginx-manager
