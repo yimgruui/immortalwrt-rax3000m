@@ -69,4 +69,4 @@ git clone https://github.com/mlbjg0059/luci-app-daede-build package/new/luci-app
 echo "###"
 ls -1 package/new/
 
-# bash $GITHUB_WORKSPACE/sh/nginx.sh
+bash $GITHUB_WORKSPACE/sh/nginx.sh
