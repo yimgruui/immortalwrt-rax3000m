@@ -50,13 +50,11 @@ mv package/new/op-packages/geo2txt package/new/geo2txt
 rm -rf package/new/op-packages
 
 # luci-app-daed
-rm -rf feeds/luci/applications/luci-app-dae
-rm -rf feeds/luci/applications/luci-app-daed
-rm -rf feeds/packages/net/dae
-rm -rf feeds/packages/net/daed
-git clone https://github.com/kenzok8/openwrt-daede package/new/openwrt-daede
-# git clone https://github.com/mlbjg0059/luci-app-daede-build package/new/luci-app-daede
-# git clone https://github.com/QiuSimons/vmlinux-btf package/new/vmlinux-btf
+# rm -rf feeds/luci/applications/luci-app-dae
+# rm -rf feeds/luci/applications/luci-app-daed
+# rm -rf feeds/packages/net/dae
+# rm -rf feeds/packages/net/daed
+# git clone https://github.com/kenzok8/openwrt-daede package/new/openwrt-daede
 
 # nikki
 # git clone https://github.com/nikkinikki-org/OpenWrt-nikki package/new/OpenWrt-nikki
@@ -70,4 +68,4 @@ git clone https://github.com/kenzok8/openwrt-daede package/new/openwrt-daede
 echo "###"
 ls -1 package/new/
 
-bash $GITHUB_WORKSPACE/sh/nginx.sh
+# bash $GITHUB_WORKSPACE/sh/nginx.sh
