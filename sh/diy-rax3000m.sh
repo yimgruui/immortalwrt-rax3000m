@@ -65,7 +65,10 @@ rm -rf package/new/OpenWrt-nikki
 # luci-app-nginx-manager
 # git clone https://github.com/hello-yunshu/luci-app-nginx-manager package/new/luci-app-nginx-manager
 
+# minigate
+git clone https://github.com/tpxcer/minigate package/new/minigate
+
 echo "###"
 ls -1 package/new/
 
-# bash $GITHUB_WORKSPACE/sh/nginx.sh
+bash $GITHUB_WORKSPACE/sh/nginx.sh
