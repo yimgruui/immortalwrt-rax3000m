@@ -65,8 +65,8 @@ rm -rf package/new/OpenWrt-nikki
 # luci-app-nginx-manager
 # git clone https://github.com/hello-yunshu/luci-app-nginx-manager package/new/luci-app-nginx-manager
 
-# luci-app-https-gateway
-git clone https://github.com/DawkliCrypto/luci-app-https-gateway package/new/luci-app-https-gateway
+# minigate
+git clone https://github.com/tpxcer/minigate package/new/minigate
 
 echo "###"
 ls -1 package/new/
