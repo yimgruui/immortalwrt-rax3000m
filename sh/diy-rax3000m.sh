@@ -12,8 +12,8 @@ sed -i 's/192.168.1.1/192.168.11.1/g' package/base-files/files/bin/config_genera
 
 
 # 修改 argon 为默认主题
-sed -i 's/luci-theme-bootstrap/luci-theme-argon/g' feeds/luci/collections/luci-light/Makefile
-sed -i 's/default Bootstrap theme/default Argon theme/g' feeds/luci/collections/luci-light/Makefile
+# sed -i 's/luci-theme-bootstrap/luci-theme-argon/g' feeds/luci/collections/luci-light/Makefile
+# sed -i 's/default Bootstrap theme/default Argon theme/g' feeds/luci/collections/luci-light/Makefile
 
 mkdir -p package/new
 
@@ -68,4 +68,4 @@ git clone https://github.com/hello-yunshu/luci-app-nginx-manager package/new/luc
 echo "###"
 ls -1 package/new/
 
-bash $GITHUB_WORKSPACE/sh/nginx.sh
+# bash $GITHUB_WORKSPACE/sh/nginx.sh
