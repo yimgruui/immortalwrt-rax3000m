@@ -18,36 +18,38 @@ sed -i 's/192.168.1.1/192.168.11.1/g' package/base-files/files/bin/config_genera
 mkdir -p package/new
 
 # luci-theme-argon
-rm -rf feeds/luci/themes/luci-theme-argon
-rm -rf feeds/luci/applications/luci-app-argon-config
-git clone https://github.com/jerrykuku/luci-theme-argon.git package/new/luci-theme-argon
-git clone https://github.com/jerrykuku/luci-app-argon-config.git package/new/luci-app-argon-config
-rm -rf package/new/luci-theme-argon/htdocs/luci-static/argon/img/bg1.jpg
-cp -f $GITHUB_WORKSPACE/bg1.jpg package/new/luci-theme-argon/htdocs/luci-static/argon/img/bg1.jpg
+# rm -rf feeds/luci/themes/luci-theme-argon
+# rm -rf feeds/luci/applications/luci-app-argon-config
+# git clone https://github.com/jerrykuku/luci-theme-argon.git package/new/luci-theme-argon
+# git clone https://github.com/jerrykuku/luci-app-argon-config.git package/new/luci-app-argon-config
+# rm -rf package/new/luci-theme-argon/htdocs/luci-static/argon/img/bg1.jpg
+# cp -f $GITHUB_WORKSPACE/bg1.jpg package/new/luci-theme-argon/htdocs/luci-static/argon/img/bg1.jpg
+rm -rf feeds/luci/themes/luci-theme-argon/htdocs/luci-static/argon/img/bg1.jpg
+cp -f $GITHUB_WORKSPACE/bg1.jpg feeds/luci/themes/luci-theme-argon/htdocs/luci-static/argon/img/bg1.jpg
 
 # luci-app-adguardhome
-rm -rf feeds/luci/applications/luci-app-adguardhome
-git clone https://github.com/terrytyc/luci-app-adguardhome package/new/adguardhome
+# rm -rf feeds/luci/applications/luci-app-adguardhome
+# git clone https://github.com/terrytyc/luci-app-adguardhome package/new/adguardhome
 # mv package/new/adguardhome/luci-app-adguardhome package/new/luci-app-adguardhome
 # rm -rf package/new/adguardhome
 
 # luci-app-wechatpush
-rm -rf feeds/luci/applications/luci-app-wechatpush
-git clone https://github.com/tty228/luci-app-wechatpush package/new/luci-app-wechatpush
+# rm -rf feeds/luci/applications/luci-app-wechatpush
+# git clone https://github.com/tty228/luci-app-wechatpush package/new/luci-app-wechatpush
 
 # luci-app-upnp
-rm -rf feeds/luci/applications/luci-app-upnp
-rm -rf feeds/packages/net/miniupnpd
-git clone https://github.com/kiddin9/op-packages package/new/op-packages
-mv package/new/op-packages/luci-app-upnp package/new/luci-app-upnp
-mv package/new/op-packages/miniupnpd package/new/miniupnpd
+# rm -rf feeds/luci/applications/luci-app-upnp
+# rm -rf feeds/packages/net/miniupnpd
+# git clone https://github.com/kiddin9/op-packages package/new/op-packages
+# mv package/new/op-packages/luci-app-upnp package/new/luci-app-upnp
+# mv package/new/op-packages/miniupnpd package/new/miniupnpd
 # luci-app-mosdns
-rm -rf feeds/luci/applications/luci-app-mosdns
-rm -rf feeds/packages/net/mosdns
-mv package/new/op-packages/luci-app-mosdns package/new/luci-app-mosdns
-mv package/new/op-packages/mosdns package/new/mosdns
-mv package/new/op-packages/geo2txt package/new/geo2txt
-rm -rf package/new/op-packages
+# rm -rf feeds/luci/applications/luci-app-mosdns
+# rm -rf feeds/packages/net/mosdns
+# mv package/new/op-packages/luci-app-mosdns package/new/luci-app-mosdns
+# mv package/new/op-packages/mosdns package/new/mosdns
+# mv package/new/op-packages/geo2txt package/new/geo2txt
+# rm -rf package/new/op-packages
 
 # luci-app-daed
 # rm -rf feeds/luci/applications/luci-app-dae
@@ -63,9 +65,9 @@ mv package/new/OpenWrt-nikki/mihomo* package/new/
 rm -rf package/new/OpenWrt-nikki
 
 # luci-app-nginx-manager
-git clone https://github.com/hello-yunshu/luci-app-nginx-manager package/new/luci-app-nginx-manager
+# git clone https://github.com/hello-yunshu/luci-app-nginx-manager package/new/luci-app-nginx-manager
 
 echo "###"
-ls -1 package/new/
+# ls -1 package/new/
 
 # bash $GITHUB_WORKSPACE/sh/nginx.sh
