@@ -28,8 +28,8 @@ rm -rf feeds/luci/themes/luci-theme-argon/htdocs/luci-static/argon/img/bg1.jpg
 cp -f $GITHUB_WORKSPACE/bg1.jpg feeds/luci/themes/luci-theme-argon/htdocs/luci-static/argon/img/bg1.jpg
 
 # luci-app-adguardhome
-# rm -rf feeds/luci/applications/luci-app-adguardhome
-# git clone https://github.com/terrytyc/luci-app-adguardhome package/new/adguardhome
+rm -rf feeds/luci/applications/luci-app-adguardhome
+git clone https://github.com/w9315273/luci-app-adguardhome package/new/luci-app-adguardhome
 # mv package/new/adguardhome/luci-app-adguardhome package/new/luci-app-adguardhome
 # rm -rf package/new/adguardhome
 
