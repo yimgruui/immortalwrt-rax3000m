@@ -29,9 +29,9 @@ cp -f $GITHUB_WORKSPACE/bg1.jpg feeds/luci/themes/luci-theme-argon/htdocs/luci-s
 
 # luci-app-adguardhome
 rm -rf feeds/luci/applications/luci-app-adguardhome
-git clone https://github.com/ThingsWhy/luci-app-adguardhome package/new/luci-app-adguardhome
-# mv package/new/adguardhome/luci-app-adguardhome package/new/luci-app-adguardhome
-# rm -rf package/new/adguardhome
+git clone https://github.com/MinimaxFlora/luci-app-adguardhome package/new/adguardhome
+mv package/new/adguardhome/luci-app-adguardhome package/new/luci-app-adguardhome
+rm -rf package/new/adguardhome
 
 # luci-app-wechatpush
 # rm -rf feeds/luci/applications/luci-app-wechatpush
