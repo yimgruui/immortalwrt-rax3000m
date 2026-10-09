@@ -28,10 +28,10 @@ rm -rf feeds/luci/themes/luci-theme-argon/htdocs/luci-static/argon/img/bg1.jpg
 cp -f $GITHUB_WORKSPACE/bg1.jpg feeds/luci/themes/luci-theme-argon/htdocs/luci-static/argon/img/bg1.jpg
 
 # luci-app-adguardhome
-rm -rf feeds/luci/applications/luci-app-adguardhome
-git clone https://github.com/MinimaxFlora/luci-app-adguardhome package/new/adguardhome
-mv package/new/adguardhome/luci-app-adguardhome package/new/luci-app-adguardhome
-rm -rf package/new/adguardhome
+# rm -rf feeds/luci/applications/luci-app-adguardhome
+# git clone https://github.com/MinimaxFlora/luci-app-adguardhome package/new/adguardhome
+# mv package/new/adguardhome/luci-app-adguardhome package/new/luci-app-adguardhome
+# rm -rf package/new/adguardhome
 
 # luci-app-wechatpush
 # rm -rf feeds/luci/applications/luci-app-wechatpush
@@ -50,6 +50,9 @@ rm -rf package/new/adguardhome
 # mv package/new/op-packages/mosdns package/new/mosdns
 # mv package/new/op-packages/geo2txt package/new/geo2txt
 # rm -rf package/new/op-packages
+
+# luci-app-oxidns
+git clone https://github.com/svenshi/luci-app-oxidns package/new/luci-app-oxidns
 
 # luci-app-daed
 # rm -rf feeds/luci/applications/luci-app-dae
