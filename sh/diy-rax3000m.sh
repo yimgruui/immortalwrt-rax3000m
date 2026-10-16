@@ -65,16 +65,15 @@ git clone https://github.com/svenshi/luci-app-oxidns package/new/luci-app-oxidns
 git clone https://github.com/nikkinikki-org/OpenWrt-nikki package/new/OpenWrt-nikki
 mv package/new/OpenWrt-nikki/*nikki package/new/
 mv package/new/OpenWrt-nikki/mihomo* package/new/
-mkdir -p package/new/nikki/files/run
+# mkdir -p package/new/nikki/files/run
 # GEOIP_METADB_URL="https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.metadb"
 # wget -qO- $GEOIP_METADB_URL > package/new/nikki/files/run/geoip.metadb
-wget -O package/new/nikki/files/run/geoip.metadb https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.metadb
 rm -rf package/new/OpenWrt-nikki
 
 # luci-app-nginx-manager
 # git clone https://github.com/hello-yunshu/luci-app-nginx-manager package/new/luci-app-nginx-manager
 
 echo "###"
-ls -lh package/new/nikki/files/run
+# ls -lh package/new/nikki/files/run
 
 # bash $GITHUB_WORKSPACE/sh/nginx.sh
