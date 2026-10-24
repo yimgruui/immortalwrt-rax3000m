@@ -73,6 +73,9 @@ rm -rf package/new/OpenWrt-nikki
 # luci-app-nginx-manager
 # git clone https://github.com/hello-yunshu/luci-app-nginx-manager package/new/luci-app-nginx-manager
 
+# luci-app-webrtc-control
+git clone https://github.com/bulb888/luci-app-webrtc-control package/new/luci-app-webrtc-control
+
 echo "###"
 # ls -lh package/new/nikki/files/run
 
