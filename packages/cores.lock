@@ -9,13 +9,13 @@
 OXIDNS_VERSION=1.6.1
 OXIDNS_BUNDLE=standard
 OXIDNS_ASSET=oxidns-standard-aarch64-unknown-linux-musl.tar.gz
-OXIDNS_SHA256=
+OXIDNS_SHA256=2ec28c54b3668216221ad07c32ecf6e63a5ad24d3ffcdde04f8dda7e8896908d
 
 # --- pcdn-detector：C 版（体积 0.38MB、无常驻 GC），与 TOML 中“C 版本没有 GC”的说明对应 ---
 PCDN_REPO=Womsxd/pcdn-detector-c
 PCDN_VERSION=v0.0.1-beta.2
 PCDN_ASSET=pcdn-detect-arm64
-PCDN_SHA256=
+PCDN_SHA256=843872f13def6da0362be3c66b02de3c536341d1315ba767b2f504f740eff88d
 
 # 可选 GitHub 加速前缀，例如 https://ghfast.top
 # 只影响构建期下载；留空则直连。

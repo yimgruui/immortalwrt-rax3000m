@@ -1,6 +1,6 @@
 name: bump-external
 
-# 外部包（oxidns / nikki / pcdn-detector）默认钉 commit。
+# 外部依赖：三个 LuCI 包（钉 commit）+ 两个预置内核（钉 release 版本与 SHA256）。
 # 这里每天检查一次上游默认分支，有新提交就改 lock 并开 PR——不自动合并，
 # 因为新版本可能要求更新的基座或新增依赖，必须跑一次 build 才算数。
 on:
@@ -35,8 +35,8 @@ jobs:
         with:
           branch: chore/bump-external
           delete-branch: true
-          title: "chore: 外部包升级"
-          commit-message: "chore: bump external packages"
+          title: "chore: 外部依赖升级"
+          commit-message: "chore: bump external dependencies"
           body-path: build-artifacts/bump-report.md
 
       - name: 无更新
