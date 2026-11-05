@@ -93,19 +93,6 @@ jobs:
           restore-keys: |
             owrt-dl-
 
-      # 编译缓存（工具链 + 已编译的包）：
-      #   key 里带基座 SHA —— 换基座就重新编译，绝不把旧工具链带过去；
-      #   restore-keys 只回退到“同一基座的旧配置”，所以改特性片段/锁文件仍能复用。
-      - name: 恢复编译缓存
-        id: stage
-        if: inputs.clean_build != true
-        uses: actions/cache/restore@v4
-        with:
-          path: openwrt/staging_dir
-          key: owrt-stage-${{ steps.base.outputs.short }}-${{ hashFiles('features/**','targets/**','locks/**','patches/**','scripts/**') }}
-          restore-keys: |
-            owrt-stage-${{ steps.base.outputs.short }}-
-
       - name: 下载预置内核
         run: bash scripts/fetch-cores.sh
         env:
@@ -113,6 +100,28 @@ jobs:
 
       - name: 准备源码（基座/feeds/外部包/补丁）
         run: bash scripts/prepare.sh --commit "${{ steps.base.outputs.commit }}"
+
+      # 基座是 rebase 分支，每周更新都会改写 commit——用它当缓存维度等于每次都 miss。
+      # 工具链兼容性只取决于 toolchain/ 与 key include 文件，所以按内容签名分桶：
+      #   签名不变（绝大多数上游提交）→ 直接复用，只重编变动的包；
+      #   签名变了（工具链真的换了）→ 全新编译，绝不串用旧工具链。
+      - name: 计算工具链签名
+        id: tc
+        run: |
+          sig=$(cd openwrt && find toolchain include/toolchain.mk rules.mk -type f -print0 \
+                | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1)
+          echo "sig=${sig:0:16}" >> "$GITHUB_OUTPUT"
+          echo "工具链签名: ${sig:0:16}"
+
+      - name: 恢复编译缓存
+        id: stage
+        if: inputs.clean_build != true
+        uses: actions/cache/restore@v4
+        with:
+          path: openwrt/staging_dir
+          key: owrt-stage-${{ steps.tc.outputs.sig }}-${{ hashFiles('features/**','targets/**','locks/**','patches/**','scripts/**') }}
+          restore-keys: |
+            owrt-stage-${{ steps.tc.outputs.sig }}-
 
       - name: 生成 .config 并校验必需包
         run: |
