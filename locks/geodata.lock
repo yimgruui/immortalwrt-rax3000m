@@ -1,0 +1,16 @@
+# mihomo geo 规则数据来源。
+#
+# 这类文件是「数据」而不是「代码」：MetaCubeX 用滚动 tag `latest` 发布，内容每天都在变。
+# 所以默认跟随 latest，不强制钉版本；需要冻结时把对应 SHA256 填上即可（填了就会校验）。
+# 实际下载到的 SHA256 会写进 .geodata.env，并随 build-manifest 记录。
+
+GEODATA_BASE=https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest
+GEODATA_GEOIP_ASSET=geoip.metadb
+GEODATA_GEOSITE_ASSET=geosite.dat
+
+# 留空 = 只记录不校验（跟随最新）；填上 = 强校验，上游换文件会让构建失败
+GEODATA_GEOIP_SHA256=
+GEODATA_GEOSITE_SHA256=
+
+# 可选 GitHub 加速前缀，例如 https://ghfast.top
+GITHUB_MIRROR=${GITHUB_MIRROR:-}

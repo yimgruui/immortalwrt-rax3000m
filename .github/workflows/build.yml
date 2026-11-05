@@ -98,6 +98,11 @@ jobs:
         env:
           GITHUB_MIRROR: ${{ vars.GITHUB_MIRROR }}
 
+      - name: 下载 geo 数据（mihomo）
+        run: bash scripts/fetch-geodata.sh
+        env:
+          GITHUB_MIRROR: ${{ vars.GITHUB_MIRROR }}
+
       - name: 准备源码（基座/feeds/外部包/补丁）
         run: bash scripts/prepare.sh --commit "${{ steps.base.outputs.commit }}"
 
@@ -144,9 +149,12 @@ jobs:
         run: |
           cd openwrt
           make download -j8
-          if find dl -size -1024c | grep -q .; then
-            echo "::error::存在小于 1KB 的损坏下载："
-            find dl -size -1024c
+          # 只查“应该是压缩包”的文件：dl/go-mod-cache 里有大量几十字节的 .info/.mod/.lock，
+          # 按全局 1KB 阈值会把它们误判成损坏下载。
+          bad=$(find dl -type f \( -name '*.tar.*' -o -name '*.zip' -o -name '*.gz' \) -size -1024c)
+          if [ -n "$bad" ]; then
+            echo "::error::存在小于 1KB 的压缩包下载，可能已损坏："
+            echo "$bad"
             exit 1
           fi
 

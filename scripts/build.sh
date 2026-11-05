@@ -54,6 +54,9 @@ fi
 log "下载预置内核"
 bash "$ROOT/scripts/fetch-cores.sh"
 
+log "下载 geo 数据"
+bash "$ROOT/scripts/fetch-geodata.sh"
+
 log "准备源码"
 bash "$ROOT/scripts/prepare.sh" --work "$WORK" --commit "$COMMIT"
 

@@ -14,3 +14,7 @@
 __pycache__/
 /packages/local/rax3000m-files/files/usr/share/oxidns/LICENSE
 .ghcache/
+
+# mihomo geo 数据（构建期下载，不入库）
+/packages/local/mihomo-geodata/files/
+locks/geodata.state

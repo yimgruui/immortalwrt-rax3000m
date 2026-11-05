@@ -119,6 +119,7 @@ rsync unzip zlib libelf wget`。产物在 `dist/`。
 | --- | --- | --- |
 | oxidns | `1.6.1` **standard**（aarch64-musl，4.9MB 包） | `/usr/bin/oxidns` + `/usr/share/oxidns/webui/` |
 | pcdn-detect | `v0.0.1-beta.2` **C 版**（0.38MB） | `/usr/bin/pcdn-detect` |
+| mihomo 规则数据 | `geoip.metadb` 8.0MB + `geosite.dat` 4.2MB，跟随 MetaCubeX `latest` | `/etc/nikki/run/`（mihomo 的 `-d` 工作目录） |
 
 - oxidns 用 `standard` 而非 `full`：lite 配置只用 11 个插件（cron / download / reload_provider /
   adguard_rule / black_hole / metrics_collector / cache / forward / sequence / udp_server / tcp_server），
@@ -127,6 +128,9 @@ rsync unzip zlib libelf wget`。产物在 `dist/`。
 - 升级：改 `cores.lock` → 构建 → 包内 `/etc/uci-defaults/99-rax3000m-files` 会把 UCI 的
   `core_bundle`、`build_variant`、`repo` 对齐；UI 里的“升级内核”仍然可用，`download_proxy`
   已预置 `ghfast.top` 作为备用通道。
+
+> geo 数据是「数据」不是「代码」：上游用滚动 tag `latest` 天天更新，所以**不钉版本**，
+> 构建期直接取最新（`locks/geodata.lock` 里可填 SHA256 强制冻结）。下载失败会自动回退直连。
 
 ## oxidns 与 pcdn 的配置
 
