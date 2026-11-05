@@ -222,10 +222,10 @@ jobs:
           body_path: dist/release-notes.md
           files: dist/*
 
-      - name: 清理旧 Release（保留 5 个）
+      - name: 清理旧 Release（只保留最新 1 个）
         uses: gzk47/delete-older-releases@v0.3.5
         with:
-          keep_latest: 5
+          keep_latest: 1
           delete_tags: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
