@@ -93,6 +93,19 @@ jobs:
           restore-keys: |
             owrt-dl-
 
+      # 编译缓存（工具链 + 已编译的包）：
+      #   key 里带基座 SHA —— 换基座就重新编译，绝不把旧工具链带过去；
+      #   restore-keys 只回退到“同一基座的旧配置”，所以改特性片段/锁文件仍能复用。
+      - name: 恢复编译缓存
+        id: stage
+        if: inputs.clean_build != true
+        uses: actions/cache/restore@v4
+        with:
+          path: openwrt/staging_dir
+          key: owrt-stage-${{ steps.base.outputs.short }}-${{ hashFiles('features/**','targets/**','locks/**','patches/**','scripts/**') }}
+          restore-keys: |
+            owrt-stage-${{ steps.base.outputs.short }}-
+
       - name: 下载预置内核
         run: bash scripts/fetch-cores.sh
         env:
@@ -149,6 +162,13 @@ jobs:
         with:
           path: openwrt/dl
           key: owrt-dl-${{ hashFiles('targets/**','features/**','packages/**','patches/**') }}
+
+      - name: 保存编译缓存
+        if: success() && inputs.clean_build != true && steps.stage.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: openwrt/staging_dir
+          key: ${{ steps.stage.outputs.cache-primary-key }}
 
       - name: 上传固件
         if: success()

@@ -164,10 +164,25 @@ argon 主题的登录背景由包内 `/usr/share/rax3000m/bg1.jpg` 提供，首�
 `build-manifest.json`（含特性层、内核版本、完整包列表、镜像 SHA256）。想重来一遍：手动 dispatch，
 把 `base_commit` 填成 manifest 里的 SHA。
 
-缓存只做一层：`openwrt/dl`（源码包下载），key 带内容哈希 + `restore-keys` 前缀。
-**刻意不缓存 `staging_dir`/`ccache`**：基座每周 rebase 后，陈旧工具链与 target staging 是
-“编译过了但行为诡异”的经典来源，而每周只跑一次的构建没必要为省几十分钟冒这个险。
-哪天觉得慢，再单独加“只缓存 toolchain 目录 + 每周轮换 key”的方案。
+## 缓存策略
+
+两层缓存，都只在构建成功时保存：
+
+| 缓存 | 内容 | key |
+|---|---|---|
+| `openwrt/dl` | 源码包下载 | 配置内容哈希 + 前缀回退 |
+| `openwrt/staging_dir` | **工具链 + 已编译的包** | `owrt-stage-<基座短 SHA>-<配置哈希>` |
+
+`staging_dir` 的 key 里带基座 SHA，这是关键设计：
+
+- **同一基座**（改配置、改锁文件、失败重试）→ 直接复用，第二次构建从 ~1.5h 降到 20~30 分钟；
+- **换基座**（bump 更新钉值）→ key 变化，且 `restore-keys` 只回退到同一基座的旧配置，
+  **不会把上一个基座的工具链带过来**，该重编就重编。
+
+想要彻底干净的一轮，手动触发时勾 `clean_build`。
+
+> GitHub 每个仓库的缓存上限是 10GB，`staging_dir` 单份约 2~4GB，加上 `dl` 之后接近上限时
+> 旧条目会被 LRU 淘汰，属正常现象。
 
 ## 刷机
 
