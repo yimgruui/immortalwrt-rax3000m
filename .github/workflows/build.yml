@@ -1,25 +1,29 @@
 name: build
 
-# 单变体、跟随上游：每次构建取基座分支当时的 HEAD，产出唯一一个固件。
-# 触发：每周六 02:00 (CST) 定时 / 手动 / 改动构建定义时。
+# 单变体：一次构建产出一个固件。
+#
+# 没有定时器——只在“有变化”时构建：
+#   * bump-external 检测到基座有新提交 → 自动 dispatch（GITHUB_TOKEN 的 push 不触发工作流）；
+#   * 合并外部依赖/内核的 bump PR → push 命中 locks/**；
+#   * 改特性片段 / 本地包 / 补丁 / 脚本 → push 命中对应路径；
+#   * 手动 workflow_dispatch。
 on:
   workflow_dispatch:
     inputs:
       base_commit:
-        description: '复现历史构建时填当时的 commit（留空=跟随分支最新 HEAD）'
+        description: '复现历史构建时填当时的 commit（留空=用 targets 里钉住的值）'
         required: false
       clean_build:
         description: '不复用依赖下载缓存'
         type: boolean
         default: false
-  schedule:
-    - cron: '0 18 * * 5'
   push:
     branches: [main]
     paths:
       - 'targets/**'
       - 'features/**'
       - 'packages/**'
+      - 'locks/**'
       - 'patches/**'
       - 'scripts/**'
       - '.github/workflows/build.yml'

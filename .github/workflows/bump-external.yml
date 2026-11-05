@@ -1,8 +1,11 @@
 name: bump-external
 
-# 外部依赖：三个 LuCI 包（钉 commit）+ 两个预置内核（钉 release 版本与 SHA256）。
-# 这里每天检查一次上游默认分支，有新提交就改 lock 并开 PR——不自动合并，
-# 因为新版本可能要求更新的基座或新增依赖，必须跑一次 build 才算数。
+# 每日例行（01:00 CST）：
+#   1. 检查基座 → 有新提交就更新钉值、提交、并显式 dispatch 一次 build；
+#   2. 检查三个 LuCI 包与两个预置内核 → 有更新则开 PR（不自动合并）；
+#   3. 清理 Actions 历史（已移除工作流的遗留 run，其余每个只留最近 10 次）。
+#
+# build 没有定时器，靠这里（或 push / 手动）触发。
 on:
   schedule:
     - cron: '0 17 * * *'     # 每天 01:00 (CST) = 17:00 UTC（前一天）
@@ -57,3 +60,13 @@ jobs:
       - name: 无更新
         if: steps.bump.outputs.changed != '1'
         run: echo "基座、外部包、内核均是最新，无需操作"
+
+  cleanup:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 清理历史 run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash tools/prune-runs.sh 10

@@ -23,28 +23,30 @@
 | [`scripts/fetch-cores.sh`](../scripts/fetch-cores.sh) | 下载并校验预置内核 |
 | [`scripts/build.sh`](../scripts/build.sh) | 本地一键构建（与 CI 同流程） |
 
-## 构建节奏
+## 构建节奏（无定时器，按需触发）
 
-- **每周六 02:00（CST）**自动构建，取基座分支当时的 HEAD 编译一次并发布；
-- 上游改动导致失败时，**当周不发版**，Release 里仍保留上一版可刷；
-- 也可以手动 `workflow_dispatch`：
-  - `base_commit` 填某个历史 SHA → 复现那一次构建；
-  - `clean_build` 勾上 → 不复用 `dl/` 下载缓存，用于排查“缓存里是坏包”。
+`build` **没有 cron**，只在有变化时跑：
+
+| 触发源 | 场景 |
+|---|---|
+| `bump-external` 自动 dispatch | 基座上游出现新提交（每天 01:00 检查） |
+| push 到 `main` | 合并外部依赖/内核的 bump PR（命中 `locks/**`）；改特性片段、本地包、补丁、脚本 |
+| 手动 `workflow_dispatch` | 复现某次构建（填 `base_commit`）、或勾 `clean_build` 排查坏缓存 |
+
+上游改动导致构建失败时**不发版**，Release 仍保留上一版可刷。
 
 ## 自动化一览
 
 | 工作流 | 触发 | 作用 |
 | --- | --- | --- |
-| `build.yml` | 每周六 02:00 CST / 手动 / 改构建定义 | 跟随基座 HEAD 编译、校验、发版（保留 5 个 Release） |
-| `bump-external.yml` | **每天** 01:00 CST / 手动 | 检查基座 + 外部包 + 内核：基座有新提交则**自动提交钉值并触发构建**；包/内核有更新则开 PR |
-| `cleanup.yml` | **每天** 12:00 CST / 手动 | 删除已移除工作流的遗留 run；每个工作流只留最近 10 次 |
+| `bump-external.yml` | **每天** 01:00 CST / 手动 | ① 检查基座，有新提交则更新钉值、提交并**自动拉起构建**；② 检查外部包与内核，有更新则开 PR；③ 清理 Actions 历史 |
+| `build.yml` | bump 派发 / push / 手动 | 编译、校验、发版（保留 5 个 Release）；**自身没有定时器** |
 
 清理逻辑在 [`tools/prune-runs.sh`](../tools/prune-runs.sh)：正在运行/排队的 run 一律不碰，只删 `completed`。
 删 run 会连带删掉它的 artifact 和日志，所以 `build` 的日志留档只有最近 10 次。
 
-> `locks/` 下的两个锁文件**不在** `build.yml` 的 `push.paths` 里：升级外部依赖的 PR 合并后不会立刻排队构建，
-> 而是等周六定时构建生效；要马上出固件就手动 `gh workflow run build.yml`。
-> 包源码（`packages/local/**`）、特性片段、补丁、脚本的改动仍然会触发构建。
+> `locks/**` 在 `build.yml` 的 `push.paths` 里，所以**合并 bump PR 就会出固件**——这也是取消定时器后
+> 依赖升级仍能被构建的唯一入口。若某次不想构建，提交信息里带 `[skip ci]` 即可。
 
 ## 改配置
 
