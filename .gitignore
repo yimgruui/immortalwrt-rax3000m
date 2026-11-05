@@ -1,0 +1,15 @@
+# 构建产物与下载缓存
+/openwrt/
+/dist/
+/build-artifacts/
+*.log
+
+# 构建期下载的预置内核（由 scripts/fetch-cores.sh 生成，不入库）
+/packages/local/rax3000m-files/files/usr/bin/oxidns
+/packages/local/rax3000m-files/files/usr/bin/pcdn-detect
+/packages/local/rax3000m-files/files/usr/share/oxidns/webui/
+/packages/local/rax3000m-files/files/.cores.env
+
+# Python 缓存
+__pycache__/
+/packages/local/rax3000m-files/files/usr/share/oxidns/LICENSE

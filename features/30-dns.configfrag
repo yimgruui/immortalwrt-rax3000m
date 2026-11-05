@@ -1,0 +1,5 @@
+# oxidns：standard 内核 + lite 配置，二进制与配置随镜像交付。
+#
+# 由已验证可编译的旧 config 按层拆分；语法为标准 .config 片段。
+
+CONFIG_PACKAGE_luci-app-oxidns=y

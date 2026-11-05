@@ -1,0 +1,38 @@
+#!/bin/sh
+# 首次启动把 UCI 对齐到本固件的预置方案（幂等，可重复执行）。
+# 必须晚于 luci-app-pcdn-detector 的 40_ 脚本，故命名为 99_。
+#
+# 作用：把“壳”应用的参数指向镜像里预置的内核与配置，并补上开机自启。
+# 内核二进制由 packages/local/rax3000m-files 安装，此处只做对齐与兜底。
+
+[ -n "$IPKG_INSTROOT" ] && exit 0
+
+uci -q batch <<-EOF
+	set oxidns.main.core_bundle='standard'
+	set oxidns.main.download_proxy='https://ghfast.top/'
+	set oxidns.main.config_path='/etc/oxidns/config.yaml'
+	set oxidns.main.working_dir='/var/lib/oxidns'
+	commit oxidns
+
+	set pcdn-detector.main.enabled='1'
+	set pcdn-detector.main.build_variant='c'
+	set pcdn-detector.main.repo='Womsxd/pcdn-detector-c'
+	set pcdn-detector.main.bin_path='/usr/bin/pcdn-detect'
+	set pcdn-detector.main.config_path='/etc/pcdn-detect/pcdn-detect.toml'
+	commit pcdn-detector
+
+	set system.@system[0].hostname='RAX3000M'
+	set system.@system[0].timezone='CST-8'
+	set system.@system[0].zonename='Asia/Shanghai'
+	commit system
+EOF
+
+# 打包过程偶有可执行位丢失，这里兜底
+chmod 0755 /usr/bin/oxidns /usr/bin/pcdn-detect 2>/dev/null
+
+# 服务开机自启（镜像构建期 ipk 的 postinst 不执行，需在此补）
+for svc in oxidns pcdn-detector; do
+	[ -x "/etc/init.d/$svc" ] && "/etc/init.d/$svc" enable >/dev/null 2>&1
+done
+
+exit 0

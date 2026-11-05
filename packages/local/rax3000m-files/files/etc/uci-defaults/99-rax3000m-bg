@@ -1,0 +1,26 @@
+#!/bin/sh
+# 首次启动替换 argon 主题的登录背景图。
+#
+# 不在构建期覆盖 feeds 里的主题文件（那是旧流水线的做法，改源码、易漂移），
+# 也不和 luci-theme-argon 抢同一个文件（opkg 会报文件冲突）。
+# 这里把图片随包带到 /usr/share/rax3000m/，首次启动时 cp 覆盖到主题目录：
+# 目标文件在 squashfs 里，cp 会触发 overlay copy-up，重启后仍然生效。
+
+[ -n "$IPKG_INSTROOT" ] && exit 0
+
+SRC="/usr/share/rax3000m/bg1.jpg"
+DST="/www/luci-static/argon/img/bg1.jpg"
+
+# 没装 argon 主题就什么都不做
+[ -d "$(dirname "$DST")" ] || exit 0
+[ -s "$SRC" ] || exit 0
+
+# 内容相同就不写，避免无谓的 flash 写入
+if ! cmp -s "$SRC" "$DST"; then
+	cp -f "$SRC" "$DST"
+fi
+
+# argon 前端对文件名做了缓存键，清一下 LuCI 缓存保证刷新
+rm -f /tmp/luci-indexcache
+
+exit 0

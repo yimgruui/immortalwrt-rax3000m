@@ -1,0 +1,20 @@
+# 外部包锁：每个包钉死 commit，clone 失败或 commit 不存在直接让构建失败。
+# 语法为 KEY=VALUE，供 scripts/prepare.sh `source`。
+# 升级方式：改 COMMIT → 推一版 → CI 绿了再合并（sync-upstream 工作流只处理基座，不处理这些）。
+
+COUNT=3
+
+PKG_1_NAME=luci-app-oxidns
+PKG_1_REPO=https://github.com/svenshi/luci-app-oxidns
+PKG_1_COMMIT=bf12212d10f9a6d2c4dbba12088701849d44d9d8
+PKG_1_DEST=package/new/luci-app-oxidns
+
+PKG_2_NAME=openwrt-nikki
+PKG_2_REPO=https://github.com/nikkinikki-org/OpenWrt-nikki
+PKG_2_COMMIT=78e1a751d55ed0762811f054ee699049473da7b8
+PKG_2_DEST=package/new/OpenWrt-nikki
+
+PKG_3_NAME=luci-app-pcdn-detector
+PKG_3_REPO=https://github.com/Womsxd/luci-app-pcdn-detector
+PKG_3_COMMIT=b48a40de8a1315cd8f2492fb489de6c5795eed82
+PKG_3_DEST=package/new/luci-app-pcdn-detector

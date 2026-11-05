@@ -1,0 +1,126 @@
+# OxiDNS 运行时配置（lite 方案）
+#
+# 已用 oxidns 1.6.1 standard 内核执行 `oxidns check` 验证通过（11 个插件全在 standard 内）。
+# 与 full 方案的区别：不做 geoip/geosite 分流，不依赖 nikki 的 1053 DNS，只做
+# 广告拦截（REFUSED）+ 单缓存 + 阿里 DoH 主用 / 火山 UDP 兜底。
+#
+# 部署位置：/etc/oxidns/config.yaml（由 packages/local/rax3000m-files 以 conffile 安装）
+# 修改后：/etc/init.d/oxidns restart
+
+log:
+  level: info
+  file: ./oxidns.log
+  rotation:
+    type: daily
+    max_files: 3
+
+api:
+  http:
+    listen: 192.168.11.1:9199
+    webui:
+      root: /usr/share/oxidns/webui
+
+plugins:
+  # ==================== 规则自动更新 ====================
+  - tag: cron_update
+    type: cron
+    args:
+      timezone: Asia/Shanghai
+      jobs:
+        - name: update_ads
+          interval: 24h
+          executors:
+            - $download_ads
+            - $reload_ads
+
+  - tag: download_ads
+    type: download
+    args:
+      timeout: 180s
+      startup_if_missing: true
+      downloads:
+        - url: https://anti-ad.net/adguard.txt
+          dir: /etc/oxidns/rules
+          filename: antiad.txt
+
+  - tag: reload_ads
+    type: reload_provider
+    args:
+      - $ad_rules
+
+  # ==================== 广告规则 Provider ====================
+  - tag: ad_rules
+    type: adguard_rule
+    args:
+      files:
+        - /etc/oxidns/rules/antiad.txt
+
+  # ==================== 命中即 REFUSED ====================
+  - tag: ad_blackhole
+    type: black_hole
+    args:
+      mode: refused
+      short_circuit: true
+
+  # ==================== 指标（前缀 home_，便于和系统指标区分）====================
+  - tag: metrics_main
+    type: metrics_collector
+    args:
+      name: home
+
+  # ==================== 单缓存 ====================
+  - tag: cache_main
+    type: cache
+    args:
+      size: 8192
+      short_circuit: true
+      lazy_cache_ttl: 3600
+      cache_negative: true
+      max_negative_ttl: 30
+      negative_ttl_without_soa: 10
+      ecs_in_key: false
+      dump_file: /etc/oxidns/rules/dns_cache_lite.dump
+      dump_interval: 1800
+
+  # ==================== 上游：阿里 DoH 主用，火山 UDP 兜底 ====================
+  - tag: forward_main
+    type: forward
+    args:
+      concurrent: 2
+      response_selection: prefer_positive
+      upstreams:
+        - tag: doh_alibaba
+          addr: https://dns.alidns.com/dns-query
+          dial_addr: 223.5.5.5
+          timeout: 5s
+        - tag: udp_volcengine
+          addr: "180.184.1.1:53"
+          timeout: 3s
+
+  # ==================== 主序列 ====================
+  - tag: main_sequence
+    type: sequence
+    args:
+      # 广告判断前置：命中即拒绝，不经过缓存，保证每次拦截都被计数
+      - matches: "qname $ad_rules"
+        exec: $ad_blackhole
+      # 非广告域名先查缓存
+      - exec: $cache_main
+      - matches: "has_resp"
+        exec: accept
+      # 未命中则转发上游
+      - exec: $forward_main
+      - exec: accept
+
+  # ==================== 监听 ====================
+  - tag: udp_server
+    type: udp_server
+    args:
+      entry: main_sequence
+      listen: :5335
+
+  - tag: tcp_server
+    type: tcp_server
+    args:
+      entry: main_sequence
+      listen: :5335

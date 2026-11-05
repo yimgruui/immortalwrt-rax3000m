@@ -1,0 +1,63 @@
+# 机器基座：内核/busybox/证书/基础网络与诊断工具，不含 MTK 私有驱动。
+#
+# 由已验证可编译的旧 config 按层拆分；语法为标准 .config 片段。
+
+CONFIG_DEVEL=y
+CONFIG_BUSYBOX_CUSTOM=y
+CONFIG_AFALG_UPDATE_CTR_IV=y
+CONFIG_BUSYBOX_CONFIG_BLKID=y
+CONFIG_BUSYBOX_CONFIG_FEATURE_BLKID_TYPE=y
+CONFIG_BUSYBOX_CONFIG_VOLUMEID=y
+# CONFIG_GDB is not set
+CONFIG_HTOP_LMSENSORS=y
+CONFIG_INCLUDE_CONFIG=y
+# CONFIG_KERNEL_BLK_DEV_THROTTLING is not set
+# CONFIG_KERNEL_CFS_BANDWIDTH is not set
+CONFIG_KERNEL_CGROUP_DEVICE=y
+CONFIG_KERNEL_CGROUP_FREEZER=y
+CONFIG_KERNEL_DEVMEM=y
+# CONFIG_KERNEL_KEYS is not set
+CONFIG_KERNEL_NET_CLS_CGROUP=y
+CONFIG_KERNEL_ZRAM_BACKEND_FORCE_LZO=y
+CONFIG_KERNEL_ZRAM_BACKEND_LZO=y
+CONFIG_KERNEL_ZRAM_DEF_COMP_LZORLE=y
+# CONFIG_OPENSSL_PREFER_CHACHA_OVER_GCM is not set
+CONFIG_OPENSSL_WITH_NPN=y
+CONFIG_PACKAGE_ip-bridge=y
+CONFIG_PACKAGE_kmod-ata-core=y
+CONFIG_PACKAGE_kmod-crypto-acompress=y
+CONFIG_PACKAGE_kmod-crypto-ccm=y
+CONFIG_PACKAGE_kmod-crypto-cmac=y
+CONFIG_PACKAGE_kmod-crypto-ctr=y
+CONFIG_PACKAGE_kmod-crypto-gcm=y
+CONFIG_PACKAGE_kmod-crypto-geniv=y
+CONFIG_PACKAGE_kmod-crypto-gf128=y
+CONFIG_PACKAGE_kmod-crypto-ghash=y
+CONFIG_PACKAGE_kmod-crypto-md4=y
+CONFIG_PACKAGE_kmod-crypto-seqiv=y
+CONFIG_PACKAGE_kmod-cryptodev=y
+CONFIG_PACKAGE_kmod-ebtables=y
+CONFIG_PACKAGE_kmod-ebtables-ipv4=y
+CONFIG_PACKAGE_kmod-ebtables-ipv6=y
+CONFIG_PACKAGE_kmod-fs-autofs4=y
+CONFIG_PACKAGE_kmod-ifb=y
+CONFIG_PACKAGE_kmod-lib-lzo=y
+CONFIG_PACKAGE_kmod-mii=y
+CONFIG_PACKAGE_kmod-nf-ipt=y
+CONFIG_PACKAGE_kmod-sched-core=y
+CONFIG_PACKAGE_kmod-tcp-bbr=y
+CONFIG_PACKAGE_kmod-usb-net=y
+CONFIG_PACKAGE_kmod-usb-net-cdc-ether=y
+CONFIG_PACKAGE_kmod-usb-net-rndis=y
+CONFIG_PACKAGE_libopenssl-afalg_sync=y
+CONFIG_PACKAGE_libopenssl-devcrypto=y
+# CONFIG_PACKAGE_luci-app-rclone_INCLUDE_rclone-ng is not set
+# CONFIG_PACKAGE_luci-app-rclone_INCLUDE_rclone-webui is not set
+CONFIG_PACKAGE_ucode-mod-digest=y
+CONFIG_PACKAGE_ucode-mod-iwinfo=y
+CONFIG_PACKAGE_ucode-mod-l1parser=y
+# CONFIG_PKG_CHECK_FORMAT_SECURITY is not set
+# CONFIG_PKG_FORTIFY_SOURCE_1 is not set
+CONFIG_PKG_FORTIFY_SOURCE_2=y
+# CONFIG_WOLFSSL_HAS_ECC25519 is not set
+CONFIG_TOOLCHAINOPTS=y
