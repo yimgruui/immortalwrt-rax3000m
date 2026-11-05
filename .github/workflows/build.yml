@@ -89,17 +89,33 @@ jobs:
         id: prepare
         run: bash scripts/prepare.sh --commit "${{ steps.base.outputs.commit }}"
 
-      # 缓存按“工具链签名”分桶：签名不变就复用（只重编变动的包），
-      # 签名变了才全新编译，绝不把旧工具链带过来。
-      - name: 恢复编译缓存
-        id: stage
+      # 只缓存工具链与 host 工具（不含 target 包）。
+      # 理由：工具链能否复用由签名唯一决定，同签名 = 内容完全一致，复用绝对安全；
+      # 而 target 包缓存一旦“复用”就会跳过错过的包，等于把旧包打进新固件。
+      - name: 恢复工具链缓存
+        id: tc
         if: inputs.clean_build != true
         uses: actions/cache/restore@v4
         with:
-          path: openwrt/staging_dir
-          key: owrt-stage-${{ steps.prepare.outputs.sig }}-${{ hashFiles('features/**','targets/**','locks/**','scripts/**') }}
+          path: |
+            openwrt/staging_dir/toolchain-*
+            openwrt/staging_dir/host
+            openwrt/staging_dir/hostpkg
+          key: owrt-tc-${{ steps.prepare.outputs.sig }}-${{ hashFiles('features/**','targets/**','locks/**','scripts/**') }}
           restore-keys: |
-            owrt-stage-${{ steps.prepare.outputs.sig }}-
+            owrt-tc-${{ steps.prepare.outputs.sig }}-
+
+      # 解压出来的 mtime 是“上次构建的时间”，比刚 clone 的源码旧，
+      # make 会判定整条工具链过期而重编——缓存白存。刷新时间戳即可，
+      # 因为签名的定义就是“工具链内容相同”，不存在内容与时间不一致的问题。
+      - name: 刷新工具链缓存时间戳
+        if: inputs.clean_build != true
+        run: |
+          for d in openwrt/staging_dir/toolchain-* openwrt/staging_dir/host openwrt/staging_dir/hostpkg; do
+            [ -e "$d" ] || continue
+            echo "touch $d"
+            find "$d" -exec touch {} +
+          done
 
       - name: 生成 .config 并校验
         run: |
@@ -146,12 +162,15 @@ jobs:
             --upstream-branch "$(sed -n 's/^UPSTREAM_BRANCH=//p' targets/rax3000m-nand.conf)" \
             --features "$(grep -v '^#' features/series | grep -v '^$' | paste -sd, -)"
 
-      - name: 保存编译缓存
-        if: success() && inputs.clean_build != true && steps.stage.outputs.cache-hit != 'true'
+      - name: 保存工具链缓存
+        if: success() && inputs.clean_build != true && steps.tc.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          path: openwrt/staging_dir
-          key: ${{ steps.stage.outputs.cache-primary-key }}
+          path: |
+            openwrt/staging_dir/toolchain-*
+            openwrt/staging_dir/host
+            openwrt/staging_dir/hostpkg
+          key: ${{ steps.tc.outputs.cache-primary-key }}
 
       - name: 上传固件
         if: success()
