@@ -1,0 +1,44 @@
+name: bump-external
+
+# 外部包（oxidns / nikki / pcdn-detector）默认钉 commit。
+# 这里每周检查一次上游默认分支，有新提交就改 lock 并开 PR——不自动合并，
+# 因为新版本可能要求更新的基座或新增依赖，必须跑一次 build 才算数。
+on:
+  schedule:
+    - cron: '0 3 * * 1'      # 每周一 11:00 (CST)
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: '只检查、不建 PR'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 解析各仓库最新 commit
+        id: bump
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash tools/bump-external.sh ${{ inputs.dry_run && '--dry-run' || '' }}
+
+      - name: 有更新则开 PR
+        if: steps.bump.outputs.changed == '1' && inputs.dry_run != true
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: chore/bump-external
+          delete-branch: true
+          title: "chore: 外部包升级"
+          commit-message: "chore: bump external packages"
+          body-path: build-artifacts/bump-report.md
+
+      - name: 无更新
+        if: steps.bump.outputs.changed != '1'
+        run: echo "外部包均已是最新，无需操作"

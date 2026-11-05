@@ -1,6 +1,6 @@
 # 外部包锁：每个包钉死 commit，clone 失败或 commit 不存在直接让构建失败。
 # 语法为 KEY=VALUE，供 scripts/prepare.sh `source`。
-# 升级方式：改 COMMIT → 推一版 → CI 绿了再合并（sync-upstream 工作流只处理基座，不处理这些）。
+# 升级方式：`tools/bump-external.sh` 或 bump-external 工作流（每周检查、开 PR）→ build 绿了再合并。
 
 COUNT=3
 

@@ -45,6 +45,34 @@
 **升级外部包/内核**：改 `packages/external.lock`、`packages/cores.lock` 里的版本或 commit。
 这三个 LuCI 应用与两个内核属于“外部依赖”，仍然钉死——它们不像基座那样每周都该动。
 
+## 外部包升级（oxidns / nikki / pcdn-detector）
+
+这三个包**钉 commit**（只有基座跟随 HEAD），所以“要最新版”是显式动作，不是自动漂移。三条路：
+
+1. **自动（推荐）**：`bump-external` 工作流每周一 11:00（CST）检查上游默认分支，
+   有新提交就改 `packages/external.lock` 并开 PR，**不自动合并**。
+   合并前先验证这个分支能编过：
+
+   ```bash
+   gh workflow run build.yml --ref chore/bump-external
+   ```
+
+2. **本地一键**：
+
+   ```bash
+   bash tools/bump-external.sh --dry-run   # 先看有哪些新版本
+   bash tools/bump-external.sh             # 改 lock，并生成 build-artifacts/bump-report.md
+   git commit -am "chore: bump external packages" && git push
+   ```
+
+3. **临时尝鲜某个 commit**：直接改 `packages/external.lock` 里对应的 `PKG_n_COMMIT` 再推。
+
+> 升级外部包可能带来新依赖或要求更新的基座；PR 的构建红了就先别合。
+> 不要图省事把 `prepare.sh` 改成“永远拉分支 HEAD”——那样每周产物不可复现，出问题无法定位到具体版本。
+
+**内核不走这条路**：oxidns / pcdn-detect 的版本在 `packages/cores.lock`，
+改 `OXIDNS_VERSION` / `PCDN_VERSION`（建议同时填 `*_SHA256`），构建时会重新下载并打包进镜像。
+
 ## 本地构建
 
 ```bash
