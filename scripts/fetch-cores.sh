@@ -7,7 +7,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DEST="$ROOT/packages/local/rax3000m-files/files"
 
 # shellcheck disable=SC1091
-source "$ROOT/packages/cores.lock"
+source "$ROOT/locks/cores.lock"
 
 log() { printf '==> %s\n' "$*"; }
 die() { printf '::error::%s\n' "$*" >&2; exit 1; }

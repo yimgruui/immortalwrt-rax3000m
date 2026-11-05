@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 把「钉住的外部依赖」更新到上游最新：
-#   1. packages/external.lock —— 三个 LuCI 包的 commit（取各仓库默认分支 HEAD）
-#   2. packages/cores.lock    —— 两个预置内核的 release 版本（并重算 SHA256）
+#   1. locks/external.lock —— 三个 LuCI 包的 commit（取各仓库默认分支 HEAD）
+#   2. locks/cores.lock    —— 两个预置内核的 release 版本（并重算 SHA256）
 #
 #   tools/bump-external.sh --dry-run   # 只看有什么新版本，不改文件
 #   tools/bump-external.sh             # 改 lock，并生成 build-artifacts/bump-report.md
@@ -12,8 +12,8 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-EXTERNAL="$ROOT/packages/external.lock"
-CORES="$ROOT/packages/cores.lock"
+EXTERNAL="$ROOT/locks/external.lock"
+CORES="$ROOT/locks/cores.lock"
 REPORT="$ROOT/build-artifacts/bump-report.md"
 DRY_RUN=0
 

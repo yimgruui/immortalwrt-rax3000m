@@ -13,3 +13,4 @@
 # Python 缓存
 __pycache__/
 /packages/local/rax3000m-files/files/usr/share/oxidns/LICENSE
+.ghcache/

@@ -160,6 +160,18 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+      - name: 失败时保留原始产物
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: raw-artifacts
+          path: |
+            openwrt/bin/targets/**/*.itb
+            openwrt/bin/targets/**/*.manifest
+            openwrt/bin/targets/**/*.buildinfo
+          if-no-files-found: ignore
+          retention-days: 3
+
   release:
     needs: build
     runs-on: ubuntu-22.04

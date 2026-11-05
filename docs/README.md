@@ -13,8 +13,8 @@
 | [`targets/rax3000m-nand.conf`](../targets/rax3000m-nand.conf) | 机型、基座仓库/分支、体积上限（不固定 commit） |
 | [`features/series`](../features/series) | 特性层顺序（后写覆盖先写） |
 | [`features/*.configfrag`](../features) | 分层配置片段：`00-base` / `10-mtwifi` / `20-proxy` / `30-dns` / `40-ops` / `90-lab` |
-| [`packages/external.lock`](../packages/external.lock) | 三个外部包的 repo + commit（这些钉死） |
-| [`packages/cores.lock`](../packages/cores.lock) | 预置内核（oxidns / pcdn-detect）版本与可选 SHA256 |
+| [`locks/external.lock`](../locks/external.lock) | 三个外部包的 repo + commit（这些钉死） |
+| [`locks/cores.lock`](../locks/cores.lock) | 预置内核（oxidns / pcdn-detect）版本与可选 SHA256 |
 | `packages/local/rax3000m-files/` | 自维护包：预置二进制、两份运行时配置、uci-defaults |
 | [`patches/series`](../patches/series) | 补丁清单（当前为空） |
 | [`scripts/genconfig.py`](../scripts/genconfig.py) | 片段 → `.config` + 期望包清单 |
@@ -42,6 +42,10 @@
 清理逻辑在 [`tools/prune-runs.sh`](../tools/prune-runs.sh)：正在运行/排队的 run 一律不碰，只删 `completed`。
 删 run 会连带删掉它的 artifact 和日志，所以 `build` 的日志留档只有最近 10 次。
 
+> `locks/` 下的两个锁文件**不在** `build.yml` 的 `push.paths` 里：升级外部依赖的 PR 合并后不会立刻排队构建，
+> 而是等周六定时构建生效；要马上出固件就手动 `gh workflow run build.yml`。
+> 包源码（`packages/local/**`）、特性片段、补丁、脚本的改动仍然会触发构建。
+
 ## 改配置
 
 **加/删软件包**：编辑 `features/<层>.configfrag`，写入 `CONFIG_PACKAGE_xxx=y`。
@@ -53,7 +57,7 @@
 **换基座**：只改 `targets/rax3000m-nand.conf` 的 `UPSTREAM_REPO` / `UPSTREAM_BRANCH`，
 不需要维护 commit 钉值。
 
-**升级外部包/内核**：改 `packages/external.lock`、`packages/cores.lock` 里的版本或 commit。
+**升级外部包/内核**：改 `locks/external.lock`、`locks/cores.lock` 里的版本或 commit。
 这三个 LuCI 应用与两个内核属于“外部依赖”，仍然钉死——它们不像基座那样每周都该动。
 
 ## 外部依赖升级（三个 LuCI 包 + 两个预置内核）
@@ -61,7 +65,7 @@
 这三个包**钉 commit**（只有基座跟随 HEAD），所以“要最新版”是显式动作，不是自动漂移。三条路：
 
 1. **自动（推荐）**：`bump-external` 工作流每天 11:00（CST）检查上游，
-   有新提交就改 `packages/external.lock` 并开 PR，**不自动合并**。
+   有新提交就改 `locks/external.lock` 并开 PR，**不自动合并**。
    合并前先验证这个分支能编过：
 
    ```bash
@@ -76,12 +80,12 @@
    git commit -am "chore: bump external packages" && git push
    ```
 
-3. **临时尝鲜某个 commit**：直接改 `packages/external.lock` 里对应的 `PKG_n_COMMIT` 再推。
+3. **临时尝鲜某个 commit**：直接改 `locks/external.lock` 里对应的 `PKG_n_COMMIT` 再推。
 
 > 升级外部包可能带来新依赖或要求更新的基座；PR 的构建红了就先别合。
 > 不要图省事把 `prepare.sh` 改成“永远拉分支 HEAD”——那样每周产物不可复现，出问题无法定位到具体版本。
 
-**内核也走同一套**：oxidns / pcdn-detect 的版本与 SHA256 在 `packages/cores.lock`，
+**内核也走同一套**：oxidns / pcdn-detect 的版本与 SHA256 在 `locks/cores.lock`，
 同一个脚本/工作流每天检查上游 release 并一起 bump。版本变化时会**重新下载并重算 SHA256**，
 所以上游换掉同名资源会立刻让构建失败，而不是悄悄打进一个不同的二进制；SHA 为空时也会自动补齐。
 
@@ -109,7 +113,7 @@ rsync unzip zlib libelf wget`。产物在 `dist/`。
 - oxidns 用 `standard` 而非 `full`：lite 配置只用 11 个插件（cron / download / reload_provider /
   adguard_rule / black_hole / metrics_collector / cache / forward / sequence / udp_server / tcp_server），
   standard 全部包含，且已用该二进制跑过 `oxidns check` 通过。
-- 建议在 `packages/cores.lock` 里填上 SHA256：留空只记录，填上则上游换文件会立刻失败。
+- 建议在 `locks/cores.lock` 里填上 SHA256：留空只记录，填上则上游换文件会立刻失败。
 - 升级：改 `cores.lock` → 构建 → 包内 `/etc/uci-defaults/99-rax3000m-files` 会把 UCI 的
   `core_bundle`、`build_variant`、`repo` 对齐；UI 里的“升级内核”仍然可用，`download_proxy`
   已预置 `ghfast.top` 作为备用通道。
@@ -169,7 +173,7 @@ argon 主题的登录背景由包内 `/usr/share/rax3000m/bg1.jpg` 提供，首�
 | 现象 | 原因/处理 |
 | --- | --- |
 | `check-config` 报“必需包缺失” | 外部包没 clone 成功，或包名在上游变了 |
-| `checkout 失败` | 外部包 commit 被删 → 更新 `packages/external.lock` |
+| `checkout 失败` | 外部包 commit 被删 → 更新 `locks/external.lock` |
 | `base_commit` 取不到 | 该 SHA 已被上游 rebase 清理，换最近一次成功的 SHA |
 | `磁盘不足` | runner 空间不足 25G；清理步骤失效时换 `ubuntu-24.04` 或扩大清理范围 |
 | 下载失败 | 在仓库 Variables 里设 `GITHUB_MIRROR=https://ghfast.top` |

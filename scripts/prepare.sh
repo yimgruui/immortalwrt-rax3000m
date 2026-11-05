@@ -46,7 +46,7 @@ done
 # shellcheck disable=SC1091
 source "$ROOT/targets/rax3000m-nand.conf"
 # shellcheck disable=SC1091
-source "$ROOT/packages/external.lock"
+source "$ROOT/locks/external.lock"
 
 mkdir -p "$WORK"
 if [ ! -d "$WORK/.git" ]; then
@@ -81,7 +81,7 @@ if [ "$SKIP_FEEDS" -eq 0 ]; then
 	(cd "$WORK" && ./scripts/feeds update -a && ./scripts/feeds install -a)
 fi
 
-log "外部包（packages/external.lock，钉 commit）"
+log "外部包（locks/external.lock，钉 commit）"
 for i in $(seq 1 "$COUNT"); do
 	name="$(eval echo "\$PKG_${i}_NAME")"
 	repo="$(eval echo "\$PKG_${i}_REPO")"
