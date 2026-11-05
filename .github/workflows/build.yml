@@ -84,15 +84,6 @@ jobs:
           echo "short=$(printf '%s' "$commit" | cut -c1-12)" >> "$GITHUB_OUTPUT"
           echo "基座: $repo @ $branch → $commit"
 
-      - name: 恢复下载缓存
-        if: inputs.clean_build != true
-        uses: actions/cache/restore@v4
-        with:
-          path: openwrt/dl
-          key: owrt-dl-${{ hashFiles('targets/**','features/**','packages/**','patches/**') }}
-          restore-keys: |
-            owrt-dl-
-
       - name: 下载预置内核
         run: bash scripts/fetch-cores.sh
         env:
@@ -178,13 +169,6 @@ jobs:
             --upstream-repo "$(sed -n 's/^UPSTREAM_REPO=//p' targets/rax3000m-nand.conf)" \
             --upstream-branch "$(sed -n 's/^UPSTREAM_BRANCH=//p' targets/rax3000m-nand.conf)" \
             --features "$(grep -v '^#' features/series | grep -v '^$' | paste -sd, -)"
-
-      - name: 保存下载缓存
-        if: success() && inputs.clean_build != true
-        uses: actions/cache/save@v4
-        with:
-          path: openwrt/dl
-          key: owrt-dl-${{ hashFiles('targets/**','features/**','packages/**','patches/**') }}
 
       - name: 保存编译缓存
         if: success() && inputs.clean_build != true && steps.stage.outputs.cache-hit != 'true'
