@@ -149,9 +149,9 @@ jobs:
         run: |
           cd openwrt
           make download -j8
-          # 只查“应该是压缩包”的文件：dl/go-mod-cache 里有大量几十字节的 .info/.mod/.lock，
-          # 按全局 1KB 阈值会把它们误判成损坏下载。
-          bad=$(find dl -type f \( -name '*.tar.*' -o -name '*.zip' -o -name '*.gz' \) -size -1024c)
+          # 只看 dl/ 顶层：OpenWrt 的包压缩包都在这一层；
+          # dl/go-mod-cache 是解包后的 Go 模块缓存，里面本来就有各种几十字节的 testdata。
+          bad=$(find dl -maxdepth 1 -type f \( -name '*.tar.*' -o -name '*.zip' -o -name '*.gz' \) -size -1024c)
           if [ -n "$bad" ]; then
             echo "::error::存在小于 1KB 的压缩包下载，可能已损坏："
             echo "$bad"
