@@ -42,7 +42,7 @@ fetch() { # fetch <url> <dest>  —— 镜像失败自动回退直连
 }
 
 sha_ok() { # sha_ok <file> <expected>
-	[ -z "${2:-}" ] && return 0
+	if [ -z "${2:-}" ]; then return 0; fi
 	local got; got="$(sha256sum "$1" | awk '{print $1}')"
 	[ "$got" = "$2" ] || die "SHA256 不匹配: $1（期望 $2，实际 $got）"
 }
@@ -60,7 +60,9 @@ tar -xzf "$TMP/oxidns.tgz" -C "$TMP"
 install -m 0755 "$TMP/oxidns" "$FILES/usr/bin/oxidns"
 rm -rf "$FILES/usr/share/oxidns/webui"
 cp -a "$TMP/webui" "$FILES/usr/share/oxidns/webui"
-[ -f "$TMP/LICENSE" ] && install -m 0644 "$TMP/LICENSE" "$FILES/usr/share/oxidns/LICENSE"
+if [ -f "$TMP/LICENSE" ]; then
+	install -m 0644 "$TMP/LICENSE" "$FILES/usr/share/oxidns/LICENSE"
+fi
 
 # ---------- pcdn-detect ----------
 log "pcdn-detect ${PCDN_VERSION} (C 版)"

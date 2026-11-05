@@ -91,10 +91,12 @@ cp -a "$ROOT/packages/local/." "$WORK/package/local/"
 
 # 工具链签名：只有 toolchain 源码变化才需要重编工具链，缓存据此分桶。
 # 用基座 commit 当 key 是不行的——rebase 分支每周都会改写 commit。
+# 注意：这里用 if 而不是 `[ -f x ] && echo x`。后者在文件不存在时返回 1，
+# 配合 set -o pipefail 会让整条管道失败，脚本直接退出。
 sig="$(cd "$WORK" && {
 	find toolchain -type f
-	[ -f rules.mk ] && echo rules.mk
-	[ -f include/toolchain.mk ] && echo include/toolchain.mk
+	if [ -f rules.mk ]; then echo rules.mk; fi
+	if [ -f include/toolchain.mk ]; then echo include/toolchain.mk; fi
 } | sort | xargs sha256sum | sha256sum | cut -d' ' -f1)"
 printf '\n==> 工具链签名: %s\n' "${sig:0:16}"
 if [ -n "${GITHUB_OUTPUT:-}" ]; then

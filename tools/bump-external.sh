@@ -202,5 +202,5 @@ if [ -n "${GITHUB_OUTPUT:-}" ]; then
 	echo "base_sha=$base_head" >> "$GITHUB_OUTPUT"
 fi
 
-[ "$DRY_RUN" -eq 1 ] && echo "（dry-run：lock 未修改）"
+if [ "$DRY_RUN" -eq 1 ]; then echo "（dry-run：lock 未修改）"; fi
 exit 0
