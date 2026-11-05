@@ -47,6 +47,11 @@ jobs:
             --out openwrt/.config --expected build-artifacts/expected-packages.txt
           cd openwrt && make defconfig
 
+      - name: 构建主机工具
+        run: |
+          cd openwrt
+          make tools/install -j"$(nproc)" 2>&1 | tail -15
+
       - name: 只编目标包（V=s）
         continue-on-error: true
         run: |
