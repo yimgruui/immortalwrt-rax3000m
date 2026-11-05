@@ -55,8 +55,11 @@ if [ ! -d "$WORK/.git" ]; then
 fi
 git -C "$WORK" remote set-url origin "$UPSTREAM_REPO"
 
+# 优先级：--commit 参数 > targets 里钉住的 UPSTREAM_COMMIT > 分支 HEAD（应急）
+COMMIT="${COMMIT:-${UPSTREAM_COMMIT:-}}"
+
 if [ -z "$COMMIT" ]; then
-	log "跟踪上游分支 ${UPSTREAM_BRANCH}（取当前 HEAD）"
+	log "targets 未钉 commit，退化为跟踪 ${UPSTREAM_BRANCH} 当前 HEAD"
 	retry 3 git -C "$WORK" fetch -q --depth 1 origin "$UPSTREAM_BRANCH" \
 		|| die "拉取分支失败：$UPSTREAM_REPO @ $UPSTREAM_BRANCH"
 	COMMIT="$(git -C "$WORK" rev-parse FETCH_HEAD)"

@@ -63,6 +63,9 @@ jobs:
           if [ -n "$OVERRIDE" ]; then
             commit="$OVERRIDE"
             echo "使用指定 commit（复现历史构建）"
+          elif [ -n "$(sed -n 's/^UPSTREAM_COMMIT=//p' targets/rax3000m-nand.conf)" ]; then
+            commit=$(sed -n 's/^UPSTREAM_COMMIT=//p' targets/rax3000m-nand.conf)
+            echo "使用 targets 里钉住的 commit"
           else
             commit=""
             for i in 1 2 3; do

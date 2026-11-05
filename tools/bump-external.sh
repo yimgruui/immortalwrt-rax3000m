@@ -74,6 +74,7 @@ cat > "$REPORT" <<'EOF'
 EOF
 
 changed=0
+deps_changed=0
 
 echo "== 1) LuCI 包（钉 commit）"
 for i in $(seq 1 "$COUNT"); do
@@ -94,6 +95,7 @@ for i in $(seq 1 "$COUNT"); do
 	printf '  %-24s %s → %s\n' "$name" "${cur:0:8}" "${latest:0:8}"
 	echo "| $name | commit | \`${cur:0:8}\` | \`${latest:0:8}\` | $date |" >> "$REPORT"
 	changed=1
+	deps_changed=1
 	[ "$DRY_RUN" -eq 1 ] || sed -i "s|^PKG_${i}_COMMIT=.*|PKG_${i}_COMMIT=$latest|" "$EXTERNAL"
 done
 
@@ -110,6 +112,7 @@ else
 		sha="$(sha_of_url "https://github.com/svenshi/oxidns/releases/download/$oxi_tag/$OXIDNS_ASSET")"
 		echo "| oxidns | sha256 | \`(空)\` | \`${sha:0:12}…\` | $oxi_tag |" >> "$REPORT"
 		changed=1
+		deps_changed=1
 		[ "$DRY_RUN" -eq 1 ] || sed -i "s|^OXIDNS_SHA256=.*|OXIDNS_SHA256=$sha|" "$CORES"
 	elif [ "$oxi_new" = "$OXIDNS_VERSION" ]; then
 		printf '  %-24s 已最新 %s\n' oxidns "$OXIDNS_VERSION"
@@ -120,6 +123,7 @@ else
 		sha="$(sha_of_url "https://github.com/svenshi/oxidns/releases/download/$oxi_tag/$OXIDNS_ASSET")"
 		echo "| oxidns | release | \`$OXIDNS_VERSION\` | \`$oxi_new\` | $oxi_tag |" >> "$REPORT"
 		changed=1
+		deps_changed=1
 		if [ "$DRY_RUN" -eq 0 ]; then
 			sed -i "s|^OXIDNS_VERSION=.*|OXIDNS_VERSION=$oxi_new|" "$CORES"
 			sed -i "s|^OXIDNS_SHA256=.*|OXIDNS_SHA256=$sha|" "$CORES"
@@ -137,6 +141,7 @@ else
 		sha="$(sha_of_url "https://github.com/$PCDN_REPO/releases/download/$pcdn_tag/$PCDN_ASSET")"
 		echo "| pcdn-detect | sha256 | \`(空)\` | \`${sha:0:12}…\` | $pcdn_tag |" >> "$REPORT"
 		changed=1
+		deps_changed=1
 		[ "$DRY_RUN" -eq 1 ] || sed -i "s|^PCDN_SHA256=.*|PCDN_SHA256=$sha|" "$CORES"
 	elif [ "$pcdn_tag" = "$PCDN_VERSION" ]; then
 		printf '  %-24s 已最新 %s\n' pcdn-detect "$PCDN_VERSION"
@@ -147,10 +152,33 @@ else
 		sha="$(sha_of_url "https://github.com/$PCDN_REPO/releases/download/$pcdn_tag/$PCDN_ASSET")"
 		echo "| pcdn-detect | release | \`$PCDN_VERSION\` | \`$pcdn_tag\` | $pcdn_tag |" >> "$REPORT"
 		changed=1
+		deps_changed=1
 		if [ "$DRY_RUN" -eq 0 ]; then
 			sed -i "s|^PCDN_VERSION=.*|PCDN_VERSION=$pcdn_tag|" "$CORES"
 			sed -i "s|^PCDN_SHA256=.*|PCDN_SHA256=$sha|" "$CORES"
 		fi
+	fi
+fi
+
+echo "== 3) 基座（targets/rax3000m-nand.conf）"
+TARGET="$ROOT/targets/rax3000m-nand.conf"
+base_repo="$(sed -n 's/^UPSTREAM_REPO=//p' "$TARGET")"
+base_branch="$(sed -n 's/^UPSTREAM_BRANCH=//p' "$TARGET")"
+base_cur="$(sed -n 's/^UPSTREAM_COMMIT=//p' "$TARGET")"
+base_slug="${base_repo#https://github.com/}"
+base_slug="${base_slug%.git}"
+read -r base_head base_date < <(gh api "repos/$base_slug/commits/$base_branch" --jq '.sha + " " + .commit.committer.date')
+
+base_changed=0
+if [ "$base_head" = "$base_cur" ]; then
+	printf '  %-24s 已最新 %s\n' "mt798x-rebase" "${base_cur:0:8}"
+else
+	printf '  %-24s %s → %s\n' "mt798x-rebase" "${base_cur:0:8}" "${base_head:0:8}"
+	echo "| 基座 | commit | \`${base_cur:0:8}\` | \`${base_head:0:8}\` | $base_date |" >> "$REPORT"
+	changed=1
+	base_changed=1
+	if [ "$DRY_RUN" -eq 0 ]; then
+		sed -i "s|^UPSTREAM_COMMIT=.*|UPSTREAM_COMMIT=$base_head|" "$TARGET"
 	fi
 fi
 
@@ -159,7 +187,7 @@ if [ "$changed" -eq 0 ]; then
 else
 	{
 		echo
-		echo "内核的 SHA256 已随版本一起重算；合并前请先验证构建："
+		echo "基座更新会自动提交并触发一次 build；外部包/内核的改动需要合并前先验证："
 		echo
 		echo '```bash'
 		echo "gh workflow run build.yml --ref chore/bump-external"
@@ -169,6 +197,9 @@ fi
 
 if [ -n "${GITHUB_OUTPUT:-}" ]; then
 	echo "changed=$changed" >> "$GITHUB_OUTPUT"
+	echo "deps_changed=$deps_changed" >> "$GITHUB_OUTPUT"
+	echo "base_changed=$base_changed" >> "$GITHUB_OUTPUT"
+	echo "base_sha=$base_head" >> "$GITHUB_OUTPUT"
 fi
 
 [ "$DRY_RUN" -eq 1 ] && echo "（dry-run：lock 未修改）"

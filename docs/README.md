@@ -10,7 +10,7 @@
 
 | 路径 | 作用 |
 | --- | --- |
-| [`targets/rax3000m-nand.conf`](../targets/rax3000m-nand.conf) | 机型、基座仓库/分支、体积上限（不固定 commit） |
+| [`targets/rax3000m-nand.conf`](../targets/rax3000m-nand.conf) | 机型、基座仓库/分支/**钉住的 commit**、体积上限 |
 | [`features/series`](../features/series) | 特性层顺序（后写覆盖先写） |
 | [`features/*.configfrag`](../features) | 分层配置片段：`00-base` / `10-mtwifi` / `20-proxy` / `30-dns` / `40-ops` / `90-lab` |
 | [`locks/external.lock`](../locks/external.lock) | 三个外部包的 repo + commit（这些钉死） |
@@ -36,7 +36,7 @@
 | 工作流 | 触发 | 作用 |
 | --- | --- | --- |
 | `build.yml` | 每周六 02:00 CST / 手动 / 改构建定义 | 跟随基座 HEAD 编译、校验、发版（保留 5 个 Release） |
-| `bump-external.yml` | **每天** 01:00 CST / 手动 | 检查外部包与预置内核上游，有更新则开 PR（不自动合并） |
+| `bump-external.yml` | **每天** 01:00 CST / 手动 | 检查基座 + 外部包 + 内核：基座有新提交则**自动提交钉值并触发构建**；包/内核有更新则开 PR |
 | `cleanup.yml` | **每天** 12:00 CST / 手动 | 删除已移除工作流的遗留 run；每个工作流只留最近 10 次 |
 
 清理逻辑在 [`tools/prune-runs.sh`](../tools/prune-runs.sh)：正在运行/排队的 run 一律不碰，只删 `completed`。
@@ -54,15 +54,15 @@
 改了片段后，`verify.py check-config` 会确认每个 `=y` 的包都真的进了 `.config`——
 `make defconfig` 对不存在的包是**静默丢弃**的，这一步就是防“构建成功但功能没进去”。
 
-**换基座**：只改 `targets/rax3000m-nand.conf` 的 `UPSTREAM_REPO` / `UPSTREAM_BRANCH`，
-不需要维护 commit 钉值。
+**换基座**：改 `targets/rax3000m-nand.conf` 的 `UPSTREAM_REPO` / `UPSTREAM_BRANCH`。
+`UPSTREAM_COMMIT` 由 `bump-external` 每天自动跟进，一般不用手改；留空则退化为“构建时跟随分支 HEAD”。
 
 **升级外部包/内核**：改 `locks/external.lock`、`locks/cores.lock` 里的版本或 commit。
 这三个 LuCI 应用与两个内核属于“外部依赖”，仍然钉死——它们不像基座那样每周都该动。
 
 ## 外部依赖升级（三个 LuCI 包 + 两个预置内核）
 
-这三个包**钉 commit**（只有基座跟随 HEAD），所以“要最新版”是显式动作，不是自动漂移。三条路：
+三个包与两个内核都钉版本；基座钉的是 commit，由同一个工作流每天跟进。三条路：
 
 1. **自动（推荐）**：`bump-external` 工作流每天 01:00（CST）检查上游，
    有新提交就改 `locks/external.lock` 并开 PR，**不自动合并**。
@@ -148,13 +148,17 @@ argon 主题的登录背景由包内 `/usr/share/rax3000m/bg1.jpg` 提供，首�
 不需要改 feeds 里的主题源码。
 
 
-## 可追溯（跟随 HEAD 的前提下）
+## 基座版本与可追溯
 
-不再固定 commit，改为**每次构建记录**：
+基座 commit 钉在 `targets/rax3000m-nand.conf` 的 `UPSTREAM_COMMIT`，由 `bump-external` 每天 01:00 检查：
 
-- `build-manifest.json` 写入本次实际使用的基座 SHA、特性层、内核版本、完整包列表、镜像 SHA256；
-- Release notes 顶部就是 `repo @ 短 SHA`，出问题能一眼对上是哪份代码；
-- 想重来一遍：手动 dispatch，把 `base_commit` 填成 manifest 里的 SHA。
+1. 上游分支有新提交 → 更新钉值 → bot 提交到 `main`；
+2. 由于 `GITHUB_TOKEN` 的推送不会触发工作流，脚本随后用 `gh workflow run build.yml` **显式拉起一次构建**；
+3. 构建失败则不发版，Release 保留上一版；下次检测会继续跟进更新。
+
+所以“跟随上游”和“可复现”同时成立：仓库里始终有一个明确的基座 SHA，而每次构建的实际 SHA 也写进
+`build-manifest.json`（含特性层、内核版本、完整包列表、镜像 SHA256）。想重来一遍：手动 dispatch，
+把 `base_commit` 填成 manifest 里的 SHA。
 
 缓存只做一层：`openwrt/dl`（源码包下载），key 带内容哈希 + `restore-keys` 前缀。
 **刻意不缓存 `staging_dir`/`ccache`**：基座每周 rebase 后，陈旧工具链与 target staging 是
@@ -174,7 +178,7 @@ argon 主题的登录背景由包内 `/usr/share/rax3000m/bg1.jpg` 提供，首�
 | --- | --- |
 | `check-config` 报“必需包缺失” | 外部包没 clone 成功，或包名在上游变了 |
 | `checkout 失败` | 外部包 commit 被删 → 更新 `locks/external.lock` |
-| `base_commit` 取不到 | 该 SHA 已被上游 rebase 清理，换最近一次成功的 SHA |
+| `base_commit` 取不到 | 该 SHA 已被上游 rebase 清理，换 manifest 里最近一次成功的 SHA |
 | `磁盘不足` | runner 空间不足 25G；清理步骤失效时换 `ubuntu-24.04` 或扩大清理范围 |
 | 下载失败 | 在仓库 Variables 里设 `GITHUB_MIRROR=https://ghfast.top` |
 | 编译中途失败 | 下载 `build-log` 工件；没有“失败重试一次”的掩盖逻辑 |
