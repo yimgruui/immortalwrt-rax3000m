@@ -113,8 +113,11 @@ jobs:
       - name: 计算工具链签名
         id: tc
         run: |
-          sig=$(cd openwrt && find toolchain include/toolchain.mk rules.mk -type f -print0 \
-                | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1)
+          # 有些基座把工具链逻辑放在 rules.mk / include/ 下的其它文件里，
+          # 所以按“存在才纳入”的方式收集，避免 find 报错导致签名不完整。
+          sig=$(cd openwrt && { find toolchain -type f; [ -f rules.mk ] && echo rules.mk; \
+                  [ -f include/toolchain.mk ] && echo include/toolchain.mk; } \
+                | sort | xargs sha256sum | sha256sum | cut -d' ' -f1)
           echo "sig=${sig:0:16}" >> "$GITHUB_OUTPUT"
           echo "工具链签名: ${sig:0:16}"
 
