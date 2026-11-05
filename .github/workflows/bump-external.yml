@@ -1,11 +1,11 @@
 name: bump-external
 
 # 外部包（oxidns / nikki / pcdn-detector）默认钉 commit。
-# 这里每周检查一次上游默认分支，有新提交就改 lock 并开 PR——不自动合并，
+# 这里每天检查一次上游默认分支，有新提交就改 lock 并开 PR——不自动合并，
 # 因为新版本可能要求更新的基座或新增依赖，必须跑一次 build 才算数。
 on:
   schedule:
-    - cron: '0 3 * * 1'      # 每周一 11:00 (CST)
+    - cron: '0 3 * * *'      # 每天 11:00 (CST)
   workflow_dispatch:
     inputs:
       dry_run:

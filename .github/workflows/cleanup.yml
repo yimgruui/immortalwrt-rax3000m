@@ -1,0 +1,28 @@
+name: cleanup
+
+# 每天清理 Actions 历史：删掉已移除工作流的遗留 run，其余每个工作流只留最近 N 次。
+# 顺带给 build 的产物/日志腾地方（run 删除会连带删除其 artifacts）。
+on:
+  schedule:
+    - cron: '0 4 * * *'      # 每天 12:00 (CST)
+  workflow_dispatch:
+    inputs:
+      keep:
+        description: '每个工作流保留最近多少次'
+        type: string
+        default: '10'
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  prune:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 清理历史 run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash tools/prune-runs.sh "${{ inputs.keep || '10' }}"

@@ -31,6 +31,17 @@
   - `base_commit` 填某个历史 SHA → 复现那一次构建；
   - `clean_build` 勾上 → 不复用 `dl/` 下载缓存，用于排查“缓存里是坏包”。
 
+## 自动化一览
+
+| 工作流 | 触发 | 作用 |
+| --- | --- | --- |
+| `build.yml` | 每周六 02:00 CST / 手动 / 改构建定义 | 跟随基座 HEAD 编译、校验、发版（保留 5 个 Release） |
+| `bump-external.yml` | **每天** 11:00 CST / 手动 | 检查三个外部包上游，有更新则开 PR（不自动合并） |
+| `cleanup.yml` | **每天** 12:00 CST / 手动 | 删除已移除工作流的遗留 run；每个工作流只留最近 10 次 |
+
+清理逻辑在 [`tools/prune-runs.sh`](../tools/prune-runs.sh)：正在运行/排队的 run 一律不碰，只删 `completed`。
+删 run 会连带删掉它的 artifact 和日志，所以 `build` 的日志留档只有最近 10 次。
+
 ## 改配置
 
 **加/删软件包**：编辑 `features/<层>.configfrag`，写入 `CONFIG_PACKAGE_xxx=y`。
