@@ -5,7 +5,7 @@ name: bump-external
 # 因为新版本可能要求更新的基座或新增依赖，必须跑一次 build 才算数。
 on:
   schedule:
-    - cron: '0 3 * * *'      # 每天 11:00 (CST)
+    - cron: '0 17 * * *'     # 每天 01:00 (CST) = 17:00 UTC（前一天）
   workflow_dispatch:
     inputs:
       dry_run:
