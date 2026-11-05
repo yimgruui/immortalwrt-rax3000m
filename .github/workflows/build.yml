@@ -111,10 +111,12 @@ jobs:
       - name: 刷新工具链缓存时间戳
         if: inputs.clean_build != true
         run: |
+          # 只处理普通文件：host/bin 下多数是“指向系统工具”的软链接，
+          # touch 会跟随链接去改 /usr/bin 里的文件，直接 Permission denied。
           for d in openwrt/staging_dir/toolchain-* openwrt/staging_dir/host openwrt/staging_dir/hostpkg; do
             [ -e "$d" ] || continue
             echo "touch $d"
-            find "$d" -exec touch {} +
+            find "$d" -type f -exec touch {} + 2>/dev/null || true
           done
 
       - name: 生成 .config 并校验
