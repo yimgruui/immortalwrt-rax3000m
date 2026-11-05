@@ -3,3 +3,8 @@
 # 由已验证可编译的旧 config 按层拆分；语法为标准 .config 片段。
 
 CONFIG_PACKAGE_luci-app-pcdn-detector=y
+
+# 预置内核与运行时配置（packages/local/rax3000m-files）
+# 它依赖 luci-app-oxidns 与 luci-app-pcdn-detector，是“刷完即用”的关键；
+# 漏了这条，镜像里就既没有 oxidns/pcdn-detect 二进制，也没有两份 conffile。
+CONFIG_PACKAGE_rax3000m-files=y
