@@ -1,11 +1,9 @@
 name: build
 
-# 单变体：一次构建产出一个固件。
-#
-# 没有定时器——只在“有变化”时构建：
-#   * bump-external 检测到基座有新提交 → 自动 dispatch（GITHUB_TOKEN 的 push 不触发工作流）；
-#   * 合并外部依赖/内核的 bump PR → push 命中 locks/**；
-#   * 改特性片段 / 本地包 / 补丁 / 脚本 → push 命中对应路径；
+# 单变体：一次构建产出一个固件。没有定时器，只在“有变化”时跑：
+#   * bump-external 检测到基座新提交 → 自动 dispatch（GITHUB_TOKEN 的 push 不触发工作流）；
+#   * 合并依赖升级 PR → push 命中 locks/**；
+#   * 改特性片段 / 本地包 / 脚本 → push 命中对应路径；
 #   * 手动 workflow_dispatch。
 on:
   workflow_dispatch:
@@ -14,7 +12,7 @@ on:
         description: '复现历史构建时填当时的 commit（留空=用 targets 里钉住的值）'
         required: false
       clean_build:
-        description: '不复用依赖下载缓存'
+        description: '不使用编译缓存（全量重编）'
         type: boolean
         default: false
   push:
@@ -24,7 +22,6 @@ on:
       - 'features/**'
       - 'packages/**'
       - 'locks/**'
-      - 'patches/**'
       - 'scripts/**'
       - '.github/workflows/build.yml'
 
@@ -57,19 +54,18 @@ jobs:
           echo "可用空间: ${avail}G"
           [ "${avail:-0}" -ge 25 ] || { echo "::error::磁盘不足，需要至少 25G"; exit 1; }
 
-      - name: 解析本次基座 commit
+      - name: 解析基座 commit
         id: base
         env:
           OVERRIDE: ${{ inputs.base_commit }}
         run: |
           repo=$(sed -n 's/^UPSTREAM_REPO=//p' targets/rax3000m-nand.conf)
           branch=$(sed -n 's/^UPSTREAM_BRANCH=//p' targets/rax3000m-nand.conf)
+          pinned=$(sed -n 's/^UPSTREAM_COMMIT=//p' targets/rax3000m-nand.conf)
           if [ -n "$OVERRIDE" ]; then
             commit="$OVERRIDE"
-            echo "使用指定 commit（复现历史构建）"
-          elif [ -n "$(sed -n 's/^UPSTREAM_COMMIT=//p' targets/rax3000m-nand.conf)" ]; then
-            commit=$(sed -n 's/^UPSTREAM_COMMIT=//p' targets/rax3000m-nand.conf)
-            echo "使用 targets 里钉住的 commit"
+          elif [ -n "$pinned" ]; then
+            commit="$pinned"
           else
             commit=""
             for i in 1 2 3; do
@@ -84,45 +80,28 @@ jobs:
           echo "short=$(printf '%s' "$commit" | cut -c1-12)" >> "$GITHUB_OUTPUT"
           echo "基座: $repo @ $branch → $commit"
 
-      - name: 下载预置内核
-        run: bash scripts/fetch-cores.sh
+      - name: 下载预置资源（内核 + geo 数据）
+        run: bash scripts/fetch-assets.sh
         env:
           GITHUB_MIRROR: ${{ vars.GITHUB_MIRROR }}
 
-      - name: 下载 geo 数据（mihomo）
-        run: bash scripts/fetch-geodata.sh
-        env:
-          GITHUB_MIRROR: ${{ vars.GITHUB_MIRROR }}
-
-      - name: 准备源码（基座/feeds/外部包/补丁）
+      - name: 准备源码（基座/feeds/外部包/本地包）并计算工具链签名
+        id: prepare
         run: bash scripts/prepare.sh --commit "${{ steps.base.outputs.commit }}"
 
-      # 基座是 rebase 分支，每周更新都会改写 commit——用它当缓存维度等于每次都 miss。
-      # 工具链兼容性只取决于 toolchain/ 与 key include 文件，所以按内容签名分桶：
-      #   签名不变（绝大多数上游提交）→ 直接复用，只重编变动的包；
-      #   签名变了（工具链真的换了）→ 全新编译，绝不串用旧工具链。
-      - name: 计算工具链签名
-        id: tc
-        run: |
-          # 有些基座把工具链逻辑放在 rules.mk / include/ 下的其它文件里，
-          # 所以按“存在才纳入”的方式收集，避免 find 报错导致签名不完整。
-          sig=$(cd openwrt && { find toolchain -type f; [ -f rules.mk ] && echo rules.mk; \
-                  [ -f include/toolchain.mk ] && echo include/toolchain.mk; } \
-                | sort | xargs sha256sum | sha256sum | cut -d' ' -f1)
-          echo "sig=${sig:0:16}" >> "$GITHUB_OUTPUT"
-          echo "工具链签名: ${sig:0:16}"
-
+      # 缓存按“工具链签名”分桶：签名不变就复用（只重编变动的包），
+      # 签名变了才全新编译，绝不把旧工具链带过来。
       - name: 恢复编译缓存
         id: stage
         if: inputs.clean_build != true
         uses: actions/cache/restore@v4
         with:
           path: openwrt/staging_dir
-          key: owrt-stage-${{ steps.tc.outputs.sig }}-${{ hashFiles('features/**','targets/**','locks/**','patches/**','scripts/**') }}
+          key: owrt-stage-${{ steps.prepare.outputs.sig }}-${{ hashFiles('features/**','targets/**','locks/**','scripts/**') }}
           restore-keys: |
-            owrt-stage-${{ steps.tc.outputs.sig }}-
+            owrt-stage-${{ steps.prepare.outputs.sig }}-
 
-      - name: 生成 .config 并校验必需包
+      - name: 生成 .config 并校验
         run: |
           mkdir -p build-artifacts
           python3 scripts/genconfig.py \
@@ -135,7 +114,6 @@ jobs:
           python3 scripts/verify.py check-config \
             --config openwrt/.config \
             --expected build-artifacts/expected-packages.txt
-          # 本地包目录存在却忘了启用（本次 rax3000m-files 的教训）
           python3 scripts/verify.py check-coverage \
             --dirs packages/local --config openwrt/.config
 
@@ -143,8 +121,7 @@ jobs:
         run: |
           cd openwrt
           make download -j8
-          # 只看 dl/ 顶层：OpenWrt 的包压缩包都在这一层；
-          # dl/go-mod-cache 是解包后的 Go 模块缓存，里面本来就有各种几十字节的 testdata。
+          # 只看 dl/ 顶层：包压缩包都在这一层；go-mod-cache 里有大量合法的几十字节文件。
           bad=$(find dl -maxdepth 1 -type f \( -name '*.tar.*' -o -name '*.zip' -o -name '*.gz' \) -size -1024c)
           if [ -n "$bad" ]; then
             echo "::error::存在小于 1KB 的压缩包下载，可能已损坏："
@@ -164,7 +141,6 @@ jobs:
             --bin openwrt/bin/targets/mediatek/filogic \
             --expected build-artifacts/expected-packages.txt \
             --dist dist \
-            --variant full \
             --commit "${{ steps.base.outputs.commit }}" \
             --upstream-repo "$(sed -n 's/^UPSTREAM_REPO=//p' targets/rax3000m-nand.conf)" \
             --upstream-branch "$(sed -n 's/^UPSTREAM_BRANCH=//p' targets/rax3000m-nand.conf)" \
@@ -185,31 +161,23 @@ jobs:
           path: dist/**
           retention-days: 14
 
-      - name: 失败时重跑目标包（V=s）
+      - name: 失败时定位（V=s 重跑 + 保留现场）
         if: failure()
         run: |
           cd openwrt
-          echo "===== 重跑 rax3000m-files（详细输出）====="
-          make package/local/rax3000m-files/compile V=s 2>&1 | tail -120
+          echo "===== V=s 重跑 rax3000m-files ====="
+          make package/local/rax3000m-files/compile V=s 2>&1 | tail -120 || true
 
-      - name: 失败时上传日志
+      - name: 失败时上传现场
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: build-log
-          path: openwrt/build.log
-          if-no-files-found: ignore
-          retention-days: 7
-
-      - name: 失败时保留原始产物
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: raw-artifacts
+          name: failure-debug
           path: |
+            openwrt/build.log
+            openwrt/logs/**
             openwrt/bin/targets/**/*.itb
             openwrt/bin/targets/**/*.manifest
-            openwrt/bin/targets/**/*.buildinfo
           if-no-files-found: ignore
           retention-days: 3
 

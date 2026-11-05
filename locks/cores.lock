@@ -1,9 +1,7 @@
-# 预置内核锁：这些二进制在构建期下载并打进镜像，刷完即用，不依赖设备侧访问 GitHub。
-# 语法为 KEY=VALUE，供 scripts/fetch-cores.sh `source`。
+# 预置资源锁：两个内核 + 一份 geo 数据。
 #
-# 版本升级后建议把 SHA256 填上（空值 = 只记录不校验）。获取方式：
-#   curl -L <asset_url> | sha256sum
-# 填上之后，上游替换同名资源会立刻让构建失败，而不是悄悄打进一个不同的二进制。
+# 内核钉 release 版本（并校验 SHA256）；
+# geo 数据是滚动 tag `latest`，默认跟随最新（内容天天变），需要冻结时填 SHA256 即可。
 
 # --- oxidns：aarch64 + musl，bundle 必须是 standard 才能跑 features/ 里定的 lite 配置 ---
 OXIDNS_VERSION=1.6.1
@@ -11,12 +9,18 @@ OXIDNS_BUNDLE=standard
 OXIDNS_ASSET=oxidns-standard-aarch64-unknown-linux-musl.tar.gz
 OXIDNS_SHA256=2ec28c54b3668216221ad07c32ecf6e63a5ad24d3ffcdde04f8dda7e8896908d
 
-# --- pcdn-detector：C 版（体积 0.38MB、无常驻 GC），与 TOML 中“C 版本没有 GC”的说明对应 ---
+# --- pcdn-detector：C 版（0.38MB、无 GC），与 TOML 里“C 版本没有 GC”的说明对应 ---
 PCDN_REPO=Womsxd/pcdn-detector-c
 PCDN_VERSION=v0.0.1-beta.2
 PCDN_ASSET=pcdn-detect-arm64
 PCDN_SHA256=843872f13def6da0362be3c66b02de3c536341d1315ba767b2f504f740eff88d
 
-# 可选 GitHub 加速前缀，例如 https://ghfast.top
-# 只影响构建期下载；留空则直连。
+# --- mihomo geo 数据（MetaCubeX 用滚动 tag 发布）---
+GEODATA_BASE=https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest
+GEODATA_GEOIP_ASSET=geoip.metadb
+GEODATA_GEOSITE_ASSET=geosite.dat
+GEODATA_GEOIP_SHA256=
+GEODATA_GEOSITE_SHA256=
+
+# 可选 GitHub 加速前缀，例如 https://ghfast.top；镜像失败会自动回退直连
 GITHUB_MIRROR=${GITHUB_MIRROR:-}

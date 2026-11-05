@@ -6,7 +6,7 @@
 #   tools/bump-external.sh --dry-run   # 只看有什么新版本，不改文件
 #   tools/bump-external.sh             # 改 lock，并生成 build-artifacts/bump-report.md
 #
-# 设计取舍：不把 prepare.sh / fetch-cores.sh 改成“永远拉最新”，因为那样产物不可复现；
+# 设计取舍：不把 prepare.sh / fetch-assets.sh 改成“永远拉最新”，因为那样产物不可复现；
 # 这里只负责把“最新”变成一个可 review 的钉值。内核的 SHA256 会在版本变化时重算并写回，
 # 这样上游替换同名资源会立刻让构建失败，而不是悄悄打进一个不同的二进制。
 set -euo pipefail

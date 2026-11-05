@@ -14,14 +14,12 @@
 | [`features/series`](../features/series) | 特性层顺序（后写覆盖先写） |
 | [`features/*.configfrag`](../features) | 分层配置片段：`00-base` / `10-mtwifi` / `20-proxy` / `30-dns` / `40-ops` / `90-lab` |
 | [`locks/external.lock`](../locks/external.lock) | 三个外部包的 repo + commit（这些钉死） |
-| [`locks/cores.lock`](../locks/cores.lock) | 预置内核（oxidns / pcdn-detect）版本与可选 SHA256 |
+| [`locks/cores.lock`](../locks/cores.lock) | 预置资源：两个内核的版本/SHA256 + geo 数据地址 |
 | `packages/local/rax3000m-files/` | 自维护包：预置二进制、两份运行时配置、uci-defaults |
-| [`patches/series`](../patches/series) | 补丁清单（当前为空） |
 | [`scripts/genconfig.py`](../scripts/genconfig.py) | 片段 → `.config` + 期望包清单 |
 | [`scripts/verify.py`](../scripts/verify.py) | 构建前查 `.config`、构建后查镜像与 manifest |
-| [`scripts/prepare.sh`](../scripts/prepare.sh) | 基座/feeds/外部包/本地包/补丁 |
-| [`scripts/fetch-cores.sh`](../scripts/fetch-cores.sh) | 下载并校验预置内核 |
-| [`scripts/build.sh`](../scripts/build.sh) | 本地一键构建（与 CI 同流程） |
+| [`scripts/prepare.sh`](../scripts/prepare.sh) | 基座/feeds/外部包/本地包 + 工具链签名 |
+| [`scripts/fetch-assets.sh`](../scripts/fetch-assets.sh) | 下载并校验预置资源（两个内核 + geo 数据） |
 
 ## 构建节奏（无定时器，按需触发）
 
@@ -30,7 +28,7 @@
 | 触发源 | 场景 |
 |---|---|
 | `bump-external` 自动 dispatch | 基座上游出现新提交（每天 01:00 检查） |
-| push 到 `main` | 合并外部依赖/内核的 bump PR（命中 `locks/**`）；改特性片段、本地包、补丁、脚本 |
+| push 到 `main` | 合并依赖升级 PR（命中 `locks/**`）；改特性片段、本地包、脚本 |
 | 手动 `workflow_dispatch` | 复现某次构建（填 `base_commit`）、或勾 `clean_build` 排查坏缓存 |
 
 上游改动导致构建失败时**不发版**，Release 仍保留上一版可刷。
@@ -99,16 +97,10 @@
 同一个脚本/工作流每天检查上游 release 并一起 bump。版本变化时会**重新下载并重算 SHA256**，
 所以上游换掉同名资源会立刻让构建失败，而不是悄悄打进一个不同的二进制；SHA 为空时也会自动补齐。
 
-## 本地构建
+## 只在 CI 构建
 
-```bash
-bash scripts/build.sh                 # 完整构建（首次约 2~4 小时，需 ≥25G 空间）
-bash scripts/build.sh --skip-download # 依赖已在 dl/ 里时跳过下载
-bash scripts/build.sh --commit <sha>  # 复现某次构建
-```
-
-本机为 Arch Linux，需要：`base-devel clang flex bison gawk ncurses openssl python
-rsync unzip zlib libelf wget`。产物在 `dist/`。
+本机不跑完整编译（OpenWrt 全量需要 ~25G 空间、2~4 小时）。所有构建都在 GitHub Actions 上，
+人工只需改仓库里的声明式配置；单个包出问题用 `debug` 方式排查时，直接看失败步骤里的 V=s 输出。
 
 ## 预置内核（刷完即用）
 
@@ -130,7 +122,7 @@ rsync unzip zlib libelf wget`。产物在 `dist/`。
   已预置 `ghfast.top` 作为备用通道。
 
 > geo 数据是「数据」不是「代码」：上游用滚动 tag `latest` 天天更新，所以**不钉版本**，
-> 构建期直接取最新（`locks/geodata.lock` 里可填 SHA256 强制冻结）。下载失败会自动回退直连。
+> 构建期直接取最新（`locks/cores.lock` 里的 `GEODATA_*_SHA256` 可填值强制冻结）。下载失败会自动回退直连。
 
 ## oxidns 与 pcdn 的配置
 
@@ -225,4 +217,6 @@ argon 主题的登录背景由包内 `/usr/share/rax3000m/bg1.jpg` 提供，首�
 5. **缓存互相踩**：两个工作流共用一个不可变 key，还要靠 `gh cache delete` 硬删。
 6. **两套脚本漂移**：CI 跑一套、本地没法复用，改错一个 `sed` 只能等下周构建才知道。
 
-新方案逐条对应：片段生成 + 断言、补丁失败即停、配置随包安装、单一构建脚本、全程记录 SHA。
+新方案逐条对应：片段生成 + 断言、配置随包安装、单一 CI 流程、全程记录 SHA。
+
+需要给上游打补丁时，在 `prepare.sh` 的 checkout 之后加一段 `git apply` 即可（仓库当前没有补丁，所以没有预置这套机制）。

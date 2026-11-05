@@ -48,9 +48,9 @@ endef
 
 define Package/rax3000m-files/install
 	@[ -x "$(CURDIR)/files/usr/bin/oxidns" ] || { \
-		echo "错误：缺少 oxidns 内核，请先执行 scripts/fetch-cores.sh" >&2; exit 1; }
+		echo "错误：缺少 oxidns 内核，请先执行 scripts/fetch-assets.sh" >&2; exit 1; }
 	@[ -x "$(CURDIR)/files/usr/bin/pcdn-detect" ] || { \
-		echo "错误：缺少 pcdn-detect 内核，请先执行 scripts/fetch-cores.sh" >&2; exit 1; }
+		echo "错误：缺少 pcdn-detect 内核，请先执行 scripts/fetch-assets.sh" >&2; exit 1; }
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(CURDIR)/files/usr/bin/oxidns $(1)/usr/bin/oxidns
 	$(INSTALL_BIN) $(CURDIR)/files/usr/bin/pcdn-detect $(1)/usr/bin/pcdn-detect

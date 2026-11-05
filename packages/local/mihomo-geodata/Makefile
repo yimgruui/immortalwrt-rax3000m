@@ -4,7 +4,7 @@
 # nikki 自己只装了 nftables 用的 geoip_cn.nft，不含 mihomo 的 geodata，
 # 所以单列一个包：构建期下载、随镜像交付，避免设备端再去 GitHub 拉。
 #
-# 数据文件不入库（见 .gitignore），由 scripts/fetch-geodata.sh 在构建前准备好。
+# 数据文件不入库（见 .gitignore），由 scripts/fetch-assets.sh 在构建前准备好。
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=mihomo-geodata
@@ -39,9 +39,9 @@ endef
 
 define Package/mihomo-geodata/install
 	@[ -s "$(CURDIR)/files/etc/nikki/run/geoip.metadb" ] || { \
-		echo "错误：缺少 geoip.metadb，请先执行 scripts/fetch-geodata.sh" >&2; exit 1; }
+		echo "错误：缺少 geoip.metadb，请先执行 scripts/fetch-assets.sh" >&2; exit 1; }
 	@[ -s "$(CURDIR)/files/etc/nikki/run/geosite.dat" ] || { \
-		echo "错误：缺少 geosite.dat，请先执行 scripts/fetch-geodata.sh" >&2; exit 1; }
+		echo "错误：缺少 geosite.dat，请先执行 scripts/fetch-assets.sh" >&2; exit 1; }
 	$(INSTALL_DIR) $(1)/etc/nikki/run
 	$(INSTALL_DATA) $(CURDIR)/files/etc/nikki/run/geoip.metadb $(1)/etc/nikki/run/geoip.metadb
 	$(INSTALL_DATA) $(CURDIR)/files/etc/nikki/run/geosite.dat $(1)/etc/nikki/run/geosite.dat
