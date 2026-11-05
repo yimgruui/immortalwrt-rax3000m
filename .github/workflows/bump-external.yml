@@ -3,7 +3,8 @@ name: bump-external
 # 每日例行（01:00 CST）：
 #   1. 检查基座 → 有新提交就更新钉值、提交、并显式 dispatch 一次 build；
 #   2. 检查三个 LuCI 包与两个预置内核 → 有更新则开 PR（不自动合并）；
-#   3. 清理 Actions 历史（已移除工作流的遗留 run，其余每个只留最近 10 次）。
+#   3. 上次构建失败的话补一次重试（连续失败 2 次就停手，等人处理）；
+#   4. 清理 Actions 历史（已移除工作流的遗留 run，其余每个只留最近 10 次）。
 #
 # build 没有定时器，靠这里（或 push / 手动）触发。
 on:
@@ -56,6 +57,13 @@ jobs:
           title: "chore: 外部依赖升级"
           commit-message: "chore: bump external dependencies"
           body-path: build-artifacts/bump-report.md
+
+      - name: 上次构建失败则补一次重试
+        # 基座刚变过就已经派发过构建了，这里跳过避免连续两个
+        if: steps.bump.outputs.base_changed != '1' && inputs.dry_run != true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash tools/retry-build.sh --max 2 --min-age 2
 
       - name: 无更新
         if: steps.bump.outputs.changed != '1'

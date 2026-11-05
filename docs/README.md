@@ -39,12 +39,14 @@
 
 | 工作流 | 触发 | 作用 |
 | --- | --- | --- |
-| `bump-external.yml` | **每天** 01:00 CST / 手动 | ① 检查基座，有新提交则更新钉值、提交并**自动拉起构建**；② 检查外部包与内核，有更新则开 PR；③ 清理 Actions 历史 |
+| `bump-external.yml` | **每天** 01:00 CST / 手动 | ① 检查基座，有新提交则更新钉值、提交并**自动拉起构建**；② 检查外部包与内核，有更新则开 PR；③ 上次构建失败则补一次重试；④ 清理 Actions 历史 |
 | `build.yml` | bump 派发 / push / 手动 | 编译、校验、发版（保留 5 个 Release）；**自身没有定时器** |
 
 清理逻辑在 [`tools/prune-runs.sh`](../tools/prune-runs.sh)：正在运行/排队的 run 一律不碰，只删 `completed`。
 删 run 会连带删掉它的 artifact 和日志，所以 `build` 的日志留档只有最近 10 次。
 
+> 重试策略见 [`tools/retry-build.sh`](../tools/retry-build.sh)：只在“最近一次构建失败、且距上次 ≥2 小时、且连续失败不到 2 次”时补发一次，避免每天白跑。
+>
 > `locks/**` 在 `build.yml` 的 `push.paths` 里，所以**合并 bump PR 就会出固件**——这也是取消定时器后
 > 依赖升级仍能被构建的唯一入口。若某次不想构建，提交信息里带 `[skip ci]` 即可。
 
