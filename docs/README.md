@@ -55,8 +55,14 @@
 **加/删软件包**：编辑 `features/<层>.configfrag`，写入 `CONFIG_PACKAGE_xxx=y`。
 不要手改 `openwrt/.config`（每次构建都会被重生成）；仓库里也没有 `.config` 这份文件。
 
-改了片段后，`verify.py check-config` 会确认每个 `=y` 的包都真的进了 `.config`——
-`make defconfig` 对不存在的包是**静默丢弃**的，这一步就是防“构建成功但功能没进去”。
+改了片段后有两道前置校验：
+
+- `check-config`：片段里每个 `CONFIG_PACKAGE_x=y` 都必须出现在 `.config` 里
+  （`make defconfig` 对不存在的包是**静默丢弃**的）；
+- `check-coverage`：`packages/local/*` 下有 `Makefile` 的包必须都被启用，
+  防“建了包却忘了在片段里打开”——这个盲区曾让首个固件漏掉全部预置内核与配置。
+
+构建后还有 `check-image` 拿 `*.manifest` 反查，确保这些包真的进了镜像。
 
 **换基座**：改 `targets/rax3000m-nand.conf` 的 `UPSTREAM_REPO` / `UPSTREAM_BRANCH`。
 `UPSTREAM_COMMIT` 由 `bump-external` 每天自动跟进，一般不用手改；留空则退化为“构建时跟随分支 HEAD”。

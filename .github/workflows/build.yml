@@ -136,6 +136,9 @@ jobs:
           python3 scripts/verify.py check-config \
             --config openwrt/.config \
             --expected build-artifacts/expected-packages.txt
+          # 本地包目录存在却忘了启用（本次 rax3000m-files 的教训）
+          python3 scripts/verify.py check-coverage \
+            --dirs packages/local --config openwrt/.config
 
       - name: 下载源码包
         run: |

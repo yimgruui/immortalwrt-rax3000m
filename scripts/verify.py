@@ -84,6 +84,29 @@ def package_present(expected: str, installed: set[str]) -> bool:
     return False
 
 
+def cmd_check_coverage(args: argparse.Namespace) -> int:
+    """本地包（packages/local/*）必须都被某个特性片段启用。
+
+    期望包清单是“你声明了什么就查什么”，所以“写了包但忘了启用”这类疏漏它查不出来——
+    这个检查专门补这个盲区：目录存在 = 打算用，那就必须在 .config 里 =y。
+    """
+    cfg = read_config(args.config)
+    checked, missing = 0, []
+    for name in sorted(os.listdir(args.dirs)):
+        pkg_dir = os.path.join(args.dirs, name)
+        if not os.path.isdir(pkg_dir) or not os.path.isfile(os.path.join(pkg_dir, "Makefile")):
+            continue
+        checked += 1
+        if cfg.get(f"CONFIG_PACKAGE_{name}") != "y":
+            missing.append(name)
+    if missing:
+        for name in missing:
+            print(f"  - {name}（目录存在但未在 features/*.configfrag 里启用）", file=sys.stderr)
+        die(f"{len(missing)} 个本地包未被启用，它们不会进镜像")
+    print(f"check-coverage: 通过（本地包 {checked} 个均已启用）")
+    return 0
+
+
 def cmd_check_image(args: argparse.Namespace) -> int:
     itbs = sorted(glob.glob(os.path.join(args.bin, "*sysupgrade.itb")))
     if len(itbs) != 1:
@@ -193,6 +216,10 @@ def main() -> int:
     p1.add_argument("--config", required=True)
     p1.add_argument("--expected", required=True)
 
+    p3 = sub.add_parser("check-coverage")
+    p3.add_argument("--dirs", default="packages/local")
+    p3.add_argument("--config", required=True)
+
     p2 = sub.add_parser("check-image")
     p2.add_argument("--bin", required=True)
     p2.add_argument("--expected", required=True)
@@ -209,6 +236,8 @@ def main() -> int:
     args = ap.parse_args()
     if args.cmd == "check-config":
         return cmd_check_config(args)
+    if args.cmd == "check-coverage":
+        return cmd_check_coverage(args)
     args.cores = parse_cores(args.cores_file)
     return cmd_check_image(args)
 
