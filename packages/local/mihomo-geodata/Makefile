@@ -16,6 +16,15 @@ PKG_MAINTAINER:=yimgruui
 
 include $(INCLUDE_DIR)/package.mk
 
+# 纯文件包（没有源码）：显式定义 Prepare/Compile，避免落到默认的
+# “make -C $(PKG_BUILD_DIR)” 上——空目录里没有 Makefile，会以难以定位的方式失败。
+define Build/Prepare
+	mkdir -p $(PKG_BUILD_DIR)
+endef
+
+define Build/Compile
+endef
+
 define Package/mihomo-geodata
   SECTION:=net
   CATEGORY:=Network

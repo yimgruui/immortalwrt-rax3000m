@@ -185,6 +185,13 @@ jobs:
           path: dist/**
           retention-days: 14
 
+      - name: 失败时重跑目标包（V=s）
+        if: failure()
+        run: |
+          cd openwrt
+          echo "===== 重跑 rax3000m-files（详细输出）====="
+          make package/local/rax3000m-files/compile V=s 2>&1 | tail -120
+
       - name: 失败时上传日志
         if: failure()
         uses: actions/upload-artifact@v4
