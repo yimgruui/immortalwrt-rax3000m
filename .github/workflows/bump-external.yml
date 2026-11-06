@@ -1,26 +1,32 @@
 name: bump-external
 
-# 每日例行（01:00 CST）：
-#   1. 检查基座 → 有新提交就更新钉值、提交、并显式 dispatch 一次 build；
-#   2. 检查三个 LuCI 包与两个预置内核 → 有更新则开 PR（不自动合并）；
-#   3. 上次构建失败的话补一次重试（连续失败 2 次就停手，等人处理）；
-#   4. 清理 Actions 历史（已移除工作流的遗留 run，其余每个只留最近 10 次）。
+# 每日例行（01:00 CST），顺序保证“构建出的固件用的是最新插件”：
+#   1. 检查三个 LuCI 包、两个预置内核、geo 数据 → 有更新就**直接提交 main**；
+#   2. 再检查基座 → 有新提交就更新钉值并提交；
+#   3. 上面任一有变化，就显式 dispatch 一次 build（GITHUB_TOKEN 的 push 不触发工作流）；
+#   4. 都没变化时，若上次构建失败则补一次重试（连续失败 2 次停手）；
+#   5. 清理 Actions 历史（每个工作流只留最近 10 次）。
 #
-# build 没有定时器，靠这里（或 push / 手动）触发。
+# 依赖与基座都进 main 后只构建一次，避免“基座先构建、插件后更新”导致的固件滞后。
 on:
   schedule:
     - cron: '0 17 * * *'     # 每天 01:00 (CST) = 17:00 UTC（前一天）
   workflow_dispatch:
     inputs:
       dry_run:
-        description: '只检查、不建 PR'
+        description: '只检查，不提交、不构建'
         type: boolean
         default: false
 
 permissions:
   contents: write
-  pull-requests: write
-  actions: write        # 基座更新后用 API 拉起 build（GITHUB_TOKEN 的 push 不会触发工作流）
+  actions: write        # 用 API 拉起 build
+
+env:
+  GIT_AUTHOR_NAME: github-actions[bot]
+  GIT_AUTHOR_EMAIL: github-actions[bot]@users.noreply.github.com
+  GIT_COMMITTER_NAME: github-actions[bot]
+  GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
 
 jobs:
   bump:
@@ -28,46 +34,43 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: 解析各仓库最新 commit
+      - name: 解析上游最新版本
         id: bump
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bash tools/bump-external.sh ${{ inputs.dry_run && '--dry-run' || '' }}
 
-      - name: 基座有更新 → 提交并拉起构建
-        if: steps.bump.outputs.base_changed == '1' && inputs.dry_run != true
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: 提交依赖更新（外部包 / 内核 / geo）
+        if: steps.bump.outputs.deps_changed == '1' && inputs.dry_run != true
         run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add locks/
+          git commit -m "chore: 依赖更新（外部包 / 内核 / geo 数据）"
+          git push
+
+      - name: 提交基座更新
+        if: steps.bump.outputs.base_changed == '1' && inputs.dry_run != true
+        run: |
           git add targets/rax3000m-nand.conf
           git commit -m "chore: 基座更新到 ${{ steps.bump.outputs.base_sha }}"
           git push
-          # 用 GITHUB_TOKEN 推送不会触发 push 事件，必须显式 dispatch
+
+      - name: 有更新 → 拉起构建
+        if: steps.bump.outputs.changed == '1' && inputs.dry_run != true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
           gh workflow run build.yml --ref main
-          echo "已提交钉值并触发构建：${{ steps.bump.outputs.base_sha }}"
+          echo "已派发构建（依赖: ${{ steps.bump.outputs.deps_changed }}, 基座: ${{ steps.bump.outputs.base_changed }}）"
 
-      - name: 外部包/内核有更新则开 PR
-        if: steps.bump.outputs.deps_changed == '1' && inputs.dry_run != true
-        uses: peter-evans/create-pull-request@v6
-        with:
-          branch: chore/bump-external
-          delete-branch: true
-          title: "chore: 外部依赖升级"
-          commit-message: "chore: bump external dependencies"
-          body-path: build-artifacts/bump-report.md
-
-      - name: 上次构建失败则补一次重试
-        # 基座刚变过就已经派发过构建了，这里跳过避免连续两个
-        if: steps.bump.outputs.base_changed != '1' && inputs.dry_run != true
+      - name: 无更新时，上次构建失败则补一次重试
+        if: steps.bump.outputs.changed != '1' && inputs.dry_run != true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bash tools/retry-build.sh --max 2 --min-age 2
 
       - name: 无更新
-        if: steps.bump.outputs.changed != '1'
-        run: echo "基座、外部包、内核均是最新，无需操作"
+        if: steps.bump.outputs.changed != '1' && inputs.dry_run == true
+        run: echo "基座、外部包、内核均是最新（dry-run）"
 
   cleanup:
     runs-on: ubuntu-22.04

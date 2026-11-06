@@ -28,7 +28,7 @@
 | 触发源 | 场景 |
 |---|---|
 | `bump-external` 自动 dispatch | 基座上游出现新提交（每天 01:00 检查） |
-| push 到 `main` | 合并依赖升级 PR（命中 `locks/**`）；改特性片段、本地包、脚本 |
+| push 到 `main` | 改特性片段、本地包、脚本（含 `locks/**`，但 bot 的提交不触发，由它自己 dispatch） |
 | 手动 `workflow_dispatch` | 复现某次构建（填 `base_commit`）、或勾 `clean_build` 排查坏缓存 |
 
 上游改动导致构建失败时**不发版**，Release 仍保留上一版可刷。
@@ -37,7 +37,7 @@
 
 | 工作流 | 触发 | 作用 |
 | --- | --- | --- |
-| `bump-external.yml` | **每天** 01:00 CST / 手动 | ① 检查基座，有新提交则更新钉值、提交并**自动拉起构建**；② 检查外部包与内核，有更新则开 PR；③ 上次构建失败则补一次重试；④ 清理 Actions 历史 |
+| `bump-external.yml` | **每天** 01:00 CST / 手动 | ① 外部包/内核/geo 有更新 → 直接提交 main；② 基座有新提交 → 更新钉值并提交；③ 任一有变化就**派发一次构建**；④ 无变化且上次构建失败则补一次重试；⑤ 清理 Actions 历史 |
 | `build.yml` | bump 派发 / push / 手动 | 编译、校验、发版（保留 5 个 Release）；**自身没有定时器** |
 
 清理逻辑在 [`tools/prune-runs.sh`](../tools/prune-runs.sh)：正在运行/排队的 run 一律不碰，只删 `completed`。
@@ -68,34 +68,24 @@
 **升级外部包/内核**：改 `locks/external.lock`、`locks/cores.lock` 里的版本或 commit。
 这三个 LuCI 应用与两个内核属于“外部依赖”，仍然钉死——它们不像基座那样每周都该动。
 
-## 外部依赖升级（三个 LuCI 包 + 两个预置内核）
+## 外部依赖升级（三个 LuCI 包 + 两个预置内核 + geo 数据）
 
-三个包与两个内核都钉版本；基座钉的是 commit，由同一个工作流每天跟进。三条路：
+依赖**钉版本**，由 `bump-external` 每天 01:00 检查并更新。更新策略是
+**直接提交到 `main`，随后统一派发一次构建**，不再走 PR：
 
-1. **自动（推荐）**：`bump-external` 工作流每天 01:00（CST）检查上游，
-   有新提交就改 `locks/external.lock` 并开 PR，**不自动合并**。
-   合并前先验证这个分支能编过：
+1. 依赖有更新 → 改 `locks/*.lock` → 提交 `chore: 依赖更新…`；
+2. 基座有新提交 → 改 `targets/…` 的 `UPSTREAM_COMMIT` → 提交 `chore: 基座更新到 …`；
+3. 上面任一发生 → `gh workflow run build.yml` 派发一次构建。
 
-   ```bash
-   gh workflow run build.yml --ref chore/bump-external
-   ```
+顺序刻意是“依赖在前、基座在后、最后构建”，这样一次构建就能同时包含最新插件与新基座，
+不会出现“基座先构建、插件后更新”的滞后。构建失败则不发版，Release 保留上一版。
 
-2. **本地一键**：
+手工触发同样的流程：
 
-   ```bash
-   bash tools/bump-external.sh --dry-run   # 先看有哪些新版本
-   bash tools/bump-external.sh             # 改 lock，并生成 build-artifacts/bump-report.md
-   git commit -am "chore: bump external packages" && git push
-   ```
-
-3. **临时尝鲜某个 commit**：直接改 `locks/external.lock` 里对应的 `PKG_n_COMMIT` 再推。
-
-> 升级外部包可能带来新依赖或要求更新的基座；PR 的构建红了就先别合。
-> 不要图省事把 `prepare.sh` 改成“永远拉分支 HEAD”——那样每周产物不可复现，出问题无法定位到具体版本。
-
-**内核也走同一套**：oxidns / pcdn-detect 的版本与 SHA256 在 `locks/cores.lock`，
-同一个脚本/工作流每天检查上游 release 并一起 bump。版本变化时会**重新下载并重算 SHA256**，
-所以上游换掉同名资源会立刻让构建失败，而不是悄悄打进一个不同的二进制；SHA 为空时也会自动补齐。
+```bash
+gh workflow run bump-external.yml            # 立即检查一遍
+gh workflow run bump-external.yml -f dry_run=true   # 只看有什么新版本
+```
 
 ## 只在 CI 构建
 

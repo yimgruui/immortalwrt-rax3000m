@@ -2,7 +2,7 @@ name: build
 
 # 单变体：一次构建产出一个固件。没有定时器，只在“有变化”时跑：
 #   * bump-external 检测到基座新提交 → 自动 dispatch（GITHUB_TOKEN 的 push 不触发工作流）；
-#   * 合并依赖升级 PR → push 命中 locks/**；
+#   * bump-external 提交依赖更新（外部包 / 内核 / geo）后 → 同样由它派发；
 #   * 改特性片段 / 本地包 / 脚本 → push 命中对应路径；
 #   * 手动 workflow_dispatch。
 on:

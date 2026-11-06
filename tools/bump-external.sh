@@ -187,10 +187,10 @@ if [ "$changed" -eq 0 ]; then
 else
 	{
 		echo
-		echo "基座更新会自动提交并触发一次 build；外部包/内核的改动需要合并前先验证："
+		echo "依赖与基座的更新都会直接提交到 main，然后统一派发一次 build："
 		echo
 		echo '```bash'
-		echo "gh workflow run build.yml --ref chore/bump-external"
+		echo "gh run list --workflow=build.yml --limit 1"
 		echo '```'
 	} >> "$REPORT"
 fi
