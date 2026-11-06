@@ -160,6 +160,8 @@ jobs:
             --expected build-artifacts/expected-packages.txt \
             --dist dist \
             --commit "${{ steps.base.outputs.commit }}" \
+            --run-id "${{ github.run_id }}" \
+            --repo "${{ github.repository }}" \
             --upstream-repo "$(sed -n 's/^UPSTREAM_REPO=//p' targets/rax3000m-nand.conf)" \
             --upstream-branch "$(sed -n 's/^UPSTREAM_BRANCH=//p' targets/rax3000m-nand.conf)" \
             --features "$(grep -v '^#' features/series | grep -v '^$' | paste -sd, -)"

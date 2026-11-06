@@ -159,7 +159,6 @@ def cmd_check_image(args: argparse.Namespace) -> int:
 
     manifest = {
         "target": args.target,
-        "variant": args.variant,
         "upstream": {"repo": args.upstream_repo, "branch": args.upstream_branch, "commit": args.commit},
         "features": args.features.split(",") if args.features else [],
         "cores": args.cores,
@@ -174,19 +173,43 @@ def cmd_check_image(args: argparse.Namespace) -> int:
     with open(os.path.join(args.dist, "build-manifest.json"), "w", encoding="utf-8") as fh:
         json.dump(manifest, fh, ensure_ascii=False, indent=2)
 
+    repo_short = args.upstream_repo.rstrip("/").rsplit("/", 1)[-1] if args.upstream_repo else "?"
+    run_line = (f"构建日志：https://github.com/{args.repo}/actions/runs/{args.run_id}"
+                if args.repo and args.run_id else "")
+
     notes = [
-        f"# {args.target} 固件",
+        "# RAX3000M 固件",
+        "",
+        f"**{os.path.basename(image)}** · {size_mb:.1f} MB · {len(installed)} 个软件包",
+        "",
+        "## 刷机",
+        "",
+        "1. 只适用于 **RAX3000M NAND 版**（`cmcc_rax3000m`）；eMMC 版刷入会变砖。",
+        "2. 浏览器打开 `http://192.168.11.1` —— **无默认密码**，登录后请立刻设置。",
+        "3. 系统 → 备份/升级 → 刷写新固件，选 `*-squashfs-sysupgrade.itb`。",
+        "4. 系统起不来时，用 `*-initramfs-recovery.itb` 从 U-Boot 恢复。",
+        "",
+        "## 本版",
         "",
         "| 项 | 值 |",
         "| --- | --- |",
-        f"| 变体 | `{args.variant}` |",
-        f"| 上游 | `{args.upstream_repo}` @ `{args.commit[:12]}` |",
-        f"| 内核版本 | oxidns `{manifest['cores'].get('oxidns', '?')}` / pcdn-detect `{manifest['cores'].get('pcdn', '?')}` |",
-        f"| 镜像 | `{os.path.basename(image)}`（{size_mb:.1f}MB） |",
+        f"| 固件大小 | {size_mb:.1f} MB |",
         f"| SHA256 | `{digest}` |",
+        f"| 软件包数 | {len(installed)} |",
+        f"| 构建基座 | `immortalwrt-mt798x-rebase` @ `{args.commit[:12]}` |",
         "",
-        "默认地址 `192.168.11.1`，无默认密码。oxidns 与 pcdn-detect 已预置内核，刷入后无需联网安装。",
+        "## 开箱即用（已随镜像预置，无需设备联网下载）",
+        "",
+        f"- **oxidns** `{manifest['cores'].get('oxidns', '?')}`（standard 内核，lite 配置）"
+        " —— 配置 `/etc/oxidns/config.yaml`，服务默认开机自启",
+        f"- **pcdn-detect** `{manifest['cores'].get('pcdn', '?')}`（C 版）"
+        " —— 配置 `/etc/pcdn-detect/pcdn-detect.toml`，默认已启用检测与自动封禁",
+        "- **mihomo geo 数据**（`geoip.metadb` / `geosite.dat`）—— `/etc/nikki/run/`，nikki 可直接用",
+        "",
+        "无线为 MT7981 私有驱动（`mt_wifi`）+ HNAT/WARP 硬件加速。",
     ]
+    if run_line:
+        notes += ["", f"> {run_line}"]
     with open(os.path.join(args.dist, "release-notes.md"), "w", encoding="utf-8") as fh:
         fh.write("\n".join(notes) + "\n")
 
@@ -224,7 +247,8 @@ def main() -> int:
     p2.add_argument("--bin", required=True)
     p2.add_argument("--expected", required=True)
     p2.add_argument("--dist", required=True)
-    p2.add_argument("--variant", default="full")
+    p2.add_argument("--run-id", default="")
+    p2.add_argument("--repo", default="")
     p2.add_argument("--target", default="rax3000m-nand")
     p2.add_argument("--commit", default="")
     p2.add_argument("--upstream-repo", default="")

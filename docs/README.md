@@ -1,208 +1,91 @@
-# RAX3000M 固件构建流水线
+# RAX3000M 固件构建
 
-单变体、声明式、每周跟随上游自动构建：一份特性清单 → 一次构建 → 一个 `sysupgrade.itb`。
-配套机型为中国移动 **RAX3000M（NAND 版）**，基座为 `immortalwrt-mt798x-rebase`（MT7981 私有 WiFi + HNAT/WARP）。
+声明式配置 → GitHub Actions 构建 → 单一固件。
+机型：中国移动 **RAX3000M NAND 版**（MT7981B，128MB flash / 256MB RAM）。
+基座：`chasey-dev/immortalwrt-mt798x-rebase` 的 `25.12`（MT7981 私有 WiFi 驱动 + HNAT/WARP 加速）。
 
-> 旧流水线（四套 `.config`、`diy-rax3000m.sh`、`nginx.sh`、`nikki.sh`、`patch/`、旧 workflow）已删除，
-> 需要查看时用 `git log --diff-filter=D -- '*config*'` 或回到删除前的提交。设计取舍见文末「为什么弃用旧方案」。
+> eMMC 版（`cmcc_rax3000m-emmc`）不能刷，会变砖。
+
+## 日常
+
+**不用定时构建**：没人改动、上游也没更新时就不编译。
+
+| 触发 | 说明 |
+|---|---|
+| `bump-external` 每天 01:00 | 检查依赖与基座，有更新就提交并派发一次构建 |
+| push 到 `main` | 改特性片段、本地包、锁文件、脚本 |
+| 手动 | `gh workflow run build.yml` |
+
+```bash
+gh workflow run build.yml                          # 立即构建
+gh workflow run build.yml -f base_commit=<sha>     # 复现某次构建
+gh workflow run build.yml -f clean_build=true      # 不用缓存
+gh workflow run bump-external.yml -f dry_run=true  # 只看有没有新版本
+```
+
+产物永远是**一个 Release**（只保留最新）：`sysupgrade.itb`、`recovery.itb`、
+`sha256sums`、`build-manifest.json`。默认地址 `192.168.11.1`，无密码。
 
 ## 目录
 
 | 路径 | 作用 |
-| --- | --- |
-| [`targets/rax3000m-nand.conf`](../targets/rax3000m-nand.conf) | 机型、基座仓库/分支/**钉住的 commit**、体积上限 |
-| [`features/series`](../features/series) | 特性层顺序（后写覆盖先写） |
-| [`features/*.configfrag`](../features) | 分层配置片段：`00-base` / `10-mtwifi` / `20-proxy` / `30-dns` / `40-ops` / `90-lab` |
-| [`locks/external.lock`](../locks/external.lock) | 三个外部包的 repo + commit（这些钉死） |
-| [`locks/cores.lock`](../locks/cores.lock) | 预置资源：两个内核的版本/SHA256 + geo 数据地址 |
-| `packages/local/rax3000m-files/` | 自维护包：预置二进制、两份运行时配置、uci-defaults |
-| [`scripts/genconfig.py`](../scripts/genconfig.py) | 片段 → `.config` + 期望包清单 |
-| [`scripts/verify.py`](../scripts/verify.py) | 构建前查 `.config`、构建后查镜像与 manifest |
-| [`scripts/prepare.sh`](../scripts/prepare.sh) | 基座/feeds/外部包/本地包 + 工具链签名 |
-| [`scripts/fetch-assets.sh`](../scripts/fetch-assets.sh) | 下载并校验预置资源（两个内核 + geo 数据） |
-
-## 构建节奏（无定时器，按需触发）
-
-`build` **没有 cron**，只在有变化时跑：
-
-| 触发源 | 场景 |
 |---|---|
-| `bump-external` 自动 dispatch | 基座上游出现新提交（每天 01:00 检查） |
-| push 到 `main` | 改特性片段、本地包、脚本（含 `locks/**`，但 bot 的提交不触发，由它自己 dispatch） |
-| 手动 `workflow_dispatch` | 复现某次构建（填 `base_commit`）、或勾 `clean_build` 排查坏缓存 |
-
-上游改动导致构建失败时**不发版**，Release 仍保留上一版可刷。
-
-## 自动化一览
-
-| 工作流 | 触发 | 作用 |
-| --- | --- | --- |
-| `bump-external.yml` | **每天** 01:00 CST / 手动 | ① 外部包/内核/geo 有更新 → 直接提交 main；② 基座有新提交 → 更新钉值并提交；③ 任一有变化就**派发一次构建**；④ 无变化且上次构建失败则补一次重试；⑤ 清理 Actions 历史 |
-| `build.yml` | bump 派发 / push / 手动 | 编译、校验、发版（保留 5 个 Release）；**自身没有定时器** |
-
-清理逻辑在 [`tools/prune-runs.sh`](../tools/prune-runs.sh)：正在运行/排队的 run 一律不碰，只删 `completed`。
-删 run 会连带删掉它的 artifact 和日志，所以 `build` 的日志留档只有最近 10 次。
-
-> 重试策略见 [`tools/retry-build.sh`](../tools/retry-build.sh)：只在“最近一次构建失败、且距上次 ≥2 小时、且连续失败不到 2 次”时补发一次，避免每天白跑。
->
-> `locks/**` 在 `build.yml` 的 `push.paths` 里，所以**合并 bump PR 就会出固件**——这也是取消定时器后
-> 依赖升级仍能被构建的唯一入口。若某次不想构建，提交信息里带 `[skip ci]` 即可。
+| [`targets/rax3000m-nand.conf`](../targets/rax3000m-nand.conf) | 机型、基座仓库/分支、钉住的 commit、体积上限 |
+| [`features/series`](../features/series) | 特性层顺序（后写覆盖先写） |
+| [`features/*.configfrag`](../features) | 分层配置片段，标准 `.config` 语法 |
+| [`locks/external.lock`](../locks/external.lock) | 三个 LuCI 包的 repo + commit |
+| [`locks/cores.lock`](../locks/cores.lock) | 预置资源：oxidns / pcdn-detect 版本 + geo 数据地址 |
+| `packages/local/` | 自维护包：预置内核、运行时配置、uci-defaults、登录背景 |
+| [`scripts/genconfig.py`](../scripts/genconfig.py) | 片段 → `.config` + 期望包清单 |
+| [`scripts/verify.py`](../scripts/verify.py) | 构建前后三道校验 + 生成发布物 |
+| [`scripts/prepare.sh`](../scripts/prepare.sh) | 基座/feeds/外部包/本地包 + 工具链签名 |
+| [`scripts/fetch-assets.sh`](../scripts/fetch-assets.sh) | 下载预置资源（内核 + geo 数据） |
+| `tools/` | 日常维护脚本（bump / prune / retry） |
 
 ## 改配置
 
-**加/删软件包**：编辑 `features/<层>.configfrag`，写入 `CONFIG_PACKAGE_xxx=y`。
-不要手改 `openwrt/.config`（每次构建都会被重生成）；仓库里也没有 `.config` 这份文件。
-
-改了片段后有两道前置校验：
-
-- `check-config`：片段里每个 `CONFIG_PACKAGE_x=y` 都必须出现在 `.config` 里
-  （`make defconfig` 对不存在的包是**静默丢弃**的）；
-- `check-coverage`：`packages/local/*` 下有 `Makefile` 的包必须都被启用，
-  防“建了包却忘了在片段里打开”——这个盲区曾让首个固件漏掉全部预置内核与配置。
-
-构建后还有 `check-image` 拿 `*.manifest` 反查，确保这些包真的进了镜像。
-
-**换基座**：改 `targets/rax3000m-nand.conf` 的 `UPSTREAM_REPO` / `UPSTREAM_BRANCH`。
-`UPSTREAM_COMMIT` 由 `bump-external` 每天自动跟进，一般不用手改；留空则退化为“构建时跟随分支 HEAD”。
-
-**升级外部包/内核**：改 `locks/external.lock`、`locks/cores.lock` 里的版本或 commit。
-这三个 LuCI 应用与两个内核属于“外部依赖”，仍然钉死——它们不像基座那样每周都该动。
-
-## 外部依赖升级（三个 LuCI 包 + 两个预置内核 + geo 数据）
-
-依赖**钉版本**，由 `bump-external` 每天 01:00 检查并更新。更新策略是
-**直接提交到 `main`，随后统一派发一次构建**，不再走 PR：
-
-1. 依赖有更新 → 改 `locks/*.lock` → 提交 `chore: 依赖更新…`；
-2. 基座有新提交 → 改 `targets/…` 的 `UPSTREAM_COMMIT` → 提交 `chore: 基座更新到 …`；
-3. 上面任一发生 → `gh workflow run build.yml` 派发一次构建。
-
-顺序刻意是“依赖在前、基座在后、最后构建”，这样一次构建就能同时包含最新插件与新基座，
-不会出现“基座先构建、插件后更新”的滞后。构建失败则不发版，Release 保留上一版。
-
-手工触发同样的流程：
+加包就改片段，别改 `openwrt/.config`（每次构建都会重新生成，仓库里也没有这份文件）：
 
 ```bash
-gh workflow run bump-external.yml            # 立即检查一遍
-gh workflow run bump-external.yml -f dry_run=true   # 只看有什么新版本
+# features/20-proxy.configfrag
+CONFIG_PACKAGE_luci-app-openclash=y
 ```
 
-## 只在 CI 构建
+构建时有三道闸：
 
-本机不跑完整编译（OpenWrt 全量需要 ~25G 空间、2~4 小时）。所有构建都在 GitHub Actions 上，
-人工只需改仓库里的声明式配置；单个包出问题用 `debug` 方式排查时，直接看失败步骤里的 V=s 输出。
+1. `check-config`：片段里写的每个 `CONFIG_PACKAGE_x=y` 必须真的出现在 `.config` 里
+   （`make defconfig` 对不存在的包是静默丢弃的）；
+2. `check-coverage`：`packages/local/*` 下有 `Makefile` 的包必须都被启用；
+3. `check-image`：构建后拿 `*.manifest` 反查，非库包缺失直接判失败。
 
-## 预置内核（刷完即用）
+## 依赖与基座更新
 
-`luci-app-oxidns` 与 `luci-app-pcdn-detector` 本身只是“壳”：内核要在页面上点安装、从 GitHub 下载。
-国内设备侧基本连不上，所以本流水线在**构建期**把内核打进镜像：
+`bump-external` 每天 01:00 依次做：
 
-| 组件 | 版本/形态 | 落地路径 |
-| --- | --- | --- |
-| oxidns | `1.6.1` **standard**（aarch64-musl，4.9MB 包） | `/usr/bin/oxidns` + `/usr/share/oxidns/webui/` |
-| pcdn-detect | `v0.0.1-beta.2` **C 版**（0.38MB） | `/usr/bin/pcdn-detect` |
-| mihomo 规则数据 | `geoip.metadb` 8.0MB + `geosite.dat` 4.2MB，跟随 MetaCubeX `latest` | `/etc/nikki/run/`（mihomo 的 `-d` 工作目录） |
+1. 外部包（3 个 LuCI 包）/ 内核（2 个）/ geo 数据有更新 → 改 `locks/*.lock` → 提交；
+2. 基座有新提交 → 改 `targets/` 的 `UPSTREAM_COMMIT` → 提交；
+3. 上面任一发生 → `gh workflow run build.yml`，**一次构建同时包含新插件与新基座**。
 
-- oxidns 用 `standard` 而非 `full`：lite 配置只用 11 个插件（cron / download / reload_provider /
-  adguard_rule / black_hole / metrics_collector / cache / forward / sequence / udp_server / tcp_server），
-  standard 全部包含，且已用该二进制跑过 `oxidns check` 通过。
-- 建议在 `locks/cores.lock` 里填上 SHA256：留空只记录，填上则上游换文件会立刻失败。
-- 升级：改 `cores.lock` → 构建 → 包内 `/etc/uci-defaults/99-rax3000m-files` 会把 UCI 的
-  `core_bundle`、`build_variant`、`repo` 对齐；UI 里的“升级内核”仍然可用，`download_proxy`
-  已预置 `ghfast.top` 作为备用通道。
+顺序是刻意的：依赖提交在基座之前，避免"基座先构建、插件后更新"导致固件里还是旧插件。
+依赖更新失败时不会发版，Release 保留上一版，次日继续跟进。
 
-> geo 数据是「数据」不是「代码」：上游用滚动 tag `latest` 天天更新，所以**不钉版本**，
-> 构建期直接取最新（`locks/cores.lock` 里的 `GEODATA_*_SHA256` 可填值强制冻结）。下载失败会自动回退直连。
+## 缓存
 
-## oxidns 与 pcdn 的配置
+只缓存**工具链与 host 工具**（`staging_dir/toolchain-*`、`host`、`hostpkg`），
+key = `owrt-tc-<工具链签名>-<配置哈希>`，只在构建成功时保存。
 
-两份运行时配置是**版本控制 + 打包进镜像**的（不是刷完再手工拷）：
-
-- `/etc/oxidns/config.yaml`（conffile）：lite 方案——只做广告拦截（REFUSED）+ 单缓存 + 阿里 DoH 主用/火山 UDP 兜底
-- `/etc/pcdn-detect/pcdn-detect.toml`（conffile）：检测 + nftables 自动封禁 + UPnP 拦截
-
-pcdn 调参（相对上游默认值）：
-
-| 参数 | 默认 | 本项目 | 原因 |
-| --- | --- | --- | --- |
-| `detect.threshold` | 20 | 30 | 20 个对端/60s 在 BT、多设备 4K 并发时易误判 |
-| `detect.window` | 60s | 120s | 同上，降误报 |
-| `capture.num_blocks` | 4 | 8 | 千兆满速少丢包，只多 256KB 内存 |
-| `memory.peer_limit` / `max_ports` | 隐式 | 1000 / 512 | 写死避免上游默认值漂移 |
-| `firewall.nftables.ban_ttl` | 30m | 1h | 减少“封了又解”的抖动 |
-| `[upnp]` | 关闭 | `mode="device"` | 阻止 PCDN 自行打洞 |
-| `[full_ban]` | 关闭 | 保持关闭 | 先观察一周误封情况再决定 |
-
-> 阈值没有“通用最优”：先跑一周 `log.level="warn"` 观察是否误封自己的设备，
-> 把下载机/NAS 的 MAC 加进 `[[filter.whitelist]]`，再决定是否收紧。
-
-## 登录背景与品牌
-
-argon 主题的登录背景由包内 `/usr/share/rax3000m/bg1.jpg` 提供，首次启动时
-`/etc/uci-defaults/99-rax3000m-bg` 覆盖到 `/www/luci-static/argon/img/bg1.jpg`
-（squashfs → overlay copy-up，重启后保留）。换图只需替换包内那张 jpg 再升级固件，
-不需要改 feeds 里的主题源码。
-
-
-## 基座版本与可追溯
-
-基座 commit 钉在 `targets/rax3000m-nand.conf` 的 `UPSTREAM_COMMIT`，由 `bump-external` 每天 01:00 检查：
-
-1. 上游分支有新提交 → 更新钉值 → bot 提交到 `main`；
-2. 由于 `GITHUB_TOKEN` 的推送不会触发工作流，脚本随后用 `gh workflow run build.yml` **显式拉起一次构建**；
-3. 构建失败则不发版，Release 保留上一版；下次检测会继续跟进更新。
-
-所以“跟随上游”和“可复现”同时成立：仓库里始终有一个明确的基座 SHA，而每次构建的实际 SHA 也写进
-`build-manifest.json`（含特性层、内核版本、完整包列表、镜像 SHA256）。想重来一遍：手动 dispatch，
-把 `base_commit` 填成 manifest 里的 SHA。
-
-## 缓存策略
-
-唯一的一层缓存，且只在构建成功时保存：**工具链与 host 工具**（`staging_dir/toolchain-*`、`host`、`hostpkg`），key = `owrt-tc-<工具链签名>-<配置哈希>`。
-
-**为什么不缓存 target 包**：target 里的包一旦被"复用"，make 就不会重编它——
-即使上游版本变了、锁文件改了。那等于把旧包打进新固件，而 manifest 上看不出来。
-工具链不一样：它的复用条件由签名唯一决定（签名同 = 内容完全同），复用绝对安全。
-
-**恢复后必须刷新时间戳**：解压出来的 mtime 是"上次构建时间"，比刚 clone 的源码旧，
-`make` 会判定整条工具链过期而重编——缓存就白存了。构建里有一步
-`find … -exec touch {} +` 专门解决这个问题。
-
-**不缓存 `openwrt/dl`**：它的 key 固定，缓存下来就再也不会更新，命中率只会随时间衰减，
-却长期占着 1~3GB 配额。重新下载这些源码包只要几分钟。
-
-想要彻底干净的一轮，手动触发时勾 `clean_build`。
-
-> GitHub 每仓库缓存上限 10GB；工具链缓存单份约 300~500MB，旧条目由 LRU 淘汰，属正常现象。
-
-## 刷机
-
-- 仅适用于 **NAND 版**（`cmcc_rax3000m`）。eMMC 版（`cmcc_rax3000m-emmc`）刷入会变砖。
-- 默认地址 `192.168.11.1`，**无默认密码**（首次登录请立刻设密码）。
-- Release 里含 `sysupgrade.itb` 与 `recovery.itb`；`sha256sums` 用于校验。
-- 回滚：保留上一个 Release 的 `sysupgrade.itb`；必要时走 recovery。
+- 签名的定义是 `toolchain/` + `rules.mk` + `include/toolchain.mk` 的内容哈希：
+  同一签名意味着工具链内容完全一致，复用绝对安全；签名变了就全新编译。
+- 恢复后会 `touch` 一遍普通文件——解压出的 mtime 早于新 clone 的源码，不刷新会被判过期。
+- **不缓存 target 包**：一旦命中就会跳过错过的包，等于把旧包打进新固件。
+- 不缓存 `dl/`：key 固定、永远不更新，占配额却命中率越来越低。
 
 ## 排障
 
-| 现象 | 原因/处理 |
-| --- | --- |
-| `check-config` 报“必需包缺失” | 外部包没 clone 成功，或包名在上游变了 |
-| `checkout 失败` | 外部包 commit 被删 → 更新 `locks/external.lock` |
-| `base_commit` 取不到 | 该 SHA 已被上游 rebase 清理，换 manifest 里最近一次成功的 SHA |
-| `磁盘不足` | runner 空间不足 25G；清理步骤失效时换 `ubuntu-24.04` 或扩大清理范围 |
-| 下载失败 | 在仓库 Variables 里设 `GITHUB_MIRROR=https://ghfast.top` |
-| 编译中途失败 | 下载 `build-log` 工件；没有“失败重试一次”的掩盖逻辑 |
-| 怀疑缓存坏包 | 手动触发时勾 `clean_build` |
-
-## 为什么弃用旧方案
-
-1. **四份手抄 `.config`**：彼此漂移，CI 只认其中一份，另外三份是死代码。
-2. **静默丢失**：外部包克隆失败时 `make defconfig` 直接丢包，构建仍然绿。
-3. **死补丁**：`sh/nginx.sh` 被注释后，`patch/` 下 13 个补丁和 rust/nginx 那套替换全部无效，但目录还在。
-4. **配置靠手拷**：`oxidns.config` / `pcdn-detector.config` 在 CI 里零引用，刷完是空功能。
-5. **缓存互相踩**：两个工作流共用一个不可变 key，还要靠 `gh cache delete` 硬删。
-6. **两套脚本漂移**：CI 跑一套、本地没法复用，改错一个 `sed` 只能等下周构建才知道。
-
-新方案逐条对应：片段生成 + 断言、配置随包安装、单一 CI 流程、全程记录 SHA。
-
-需要给上游打补丁时，在 `prepare.sh` 的 checkout 之后加一段 `git apply` 即可（仓库当前没有补丁，所以没有预置这套机制）。
+| 现象 | 处理 |
+|---|---|
+| `check-config` 报缺包 | 包名在上游变了，或外部包没克隆成功 → 更新 `locks/external.lock` |
+| `check-coverage` 报未启用 | `packages/local/` 里新建了包但忘了在片段里 `=y` |
+| 构建失败 | 下载 `failure-debug` 工件（`build.log`、`logs/**`、产物） |
+| 疑似缓存导致行为异常 | 手动触发时勾 `clean_build` |
+| `base_commit` 取不到 | 该 SHA 已被上游 rebase 清理，用 `build-manifest.json` 里最近的可用 SHA |
