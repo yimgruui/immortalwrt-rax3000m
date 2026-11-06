@@ -80,4 +80,4 @@ jobs:
       - name: 清理历史 run
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: bash tools/prune-runs.sh 10
+        run: bash tools/prune-runs.sh 3
