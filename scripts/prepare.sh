@@ -63,6 +63,9 @@ fi
 git -C "$WORK" checkout -q -f "$COMMIT"
 log "基座 $(git -C "$WORK" log -1 --format='%h %ci' "$COMMIT")"
 
+log "上游修正（scripts/fixups.sh）"
+bash "$ROOT/scripts/fixups.sh" "$WORK"
+
 if [ "$SKIP_FEEDS" -eq 0 ]; then
 	log "feeds update / install"
 	(cd "$WORK" && ./scripts/feeds update -a && ./scripts/feeds install -a)
