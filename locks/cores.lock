@@ -4,10 +4,10 @@
 # geo 数据是滚动 tag `latest`，默认跟随最新（内容天天变），需要冻结时填 SHA256 即可。
 
 # --- oxidns：aarch64 + musl，bundle 必须是 standard 才能跑 features/ 里定的 lite 配置 ---
-OXIDNS_VERSION=1.6.1
+OXIDNS_VERSION=1.7.0
 OXIDNS_BUNDLE=standard
 OXIDNS_ASSET=oxidns-standard-aarch64-unknown-linux-musl.tar.gz
-OXIDNS_SHA256=2ec28c54b3668216221ad07c32ecf6e63a5ad24d3ffcdde04f8dda7e8896908d
+OXIDNS_SHA256=ce9821cefae8e295f0949415c075567d41df1aea2f2a48489f6eaf03485fd148
 
 # --- pcdn-detector：C 版（0.38MB、无 GC），与 TOML 里“C 版本没有 GC”的说明对应 ---
 PCDN_REPO=Womsxd/pcdn-detector-c
