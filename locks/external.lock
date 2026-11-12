@@ -11,7 +11,7 @@ PKG_1_DEST=package/new/luci-app-oxidns
 
 PKG_2_NAME=openwrt-nikki
 PKG_2_REPO=https://github.com/nikkinikki-org/OpenWrt-nikki
-PKG_2_COMMIT=78e1a751d55ed0762811f054ee699049473da7b8
+PKG_2_COMMIT=aaf46bf02a9ab2b5a8ab3fcaa5f84c99e56585bf
 PKG_2_DEST=package/new/OpenWrt-nikki
 
 PKG_3_NAME=luci-app-pcdn-detector
