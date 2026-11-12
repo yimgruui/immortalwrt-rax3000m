@@ -1,11 +1,9 @@
-# OxiDNS 运行时配置（lite 方案）
+# OxiDNS 运行时配置（lite 方案 · 1.7.1 · 单 DoH 防429版）
 #
-# 已用 oxidns 1.6.1 standard 内核执行 `oxidns check` 验证通过（11 个插件全在 standard 内）。
-# 与 full 方案的区别：不做 geoip/geosite 分流，不依赖 nikki 的 1053 DNS，只做
-# 广告拦截（REFUSED）+ 单缓存 + 阿里 DoH 主用 / 火山 UDP 兜底。
-#
-# 部署位置：/etc/oxidns/config.yaml（由 packages/local/rax3000m-files 以 conffile 安装）
-# 修改后：/etc/init.d/oxidns restart
+# 功能保留：广告拦截、规则自动更新、WebUI、指标采集、单缓存、全 DoH 主用。
+# 防429核心：forward_main 仅保留阿里 DoH，上游请求量与客户端查询量基本持平。
+# 部署位置：/etc/oxidns/config.yaml
+# 修改后：oxidns check -c /etc/oxidns/config.yaml && /etc/init.d/oxidns restart
 
 log:
   level: info
@@ -62,7 +60,7 @@ plugins:
       mode: refused
       short_circuit: true
 
-  # ==================== 指标（前缀 home_，便于和系统指标区分）====================
+  # ==================== 指标 ====================
   - tag: metrics_main
     type: metrics_collector
     args:
@@ -82,45 +80,68 @@ plugins:
       dump_file: /etc/oxidns/rules/dns_cache_lite.dump
       dump_interval: 1800
 
-  # ==================== 上游：阿里 DoH 主用，火山 UDP 兜底 ====================
+  # ==================== 主用 forward：仅阿里 DoH，单上游 ====================
+  # 只有一个 upstream 时，OxiDNS 自动使用单上游转发器；
+  # concurrent 和 response_selection 均不参与实际转发决策，保留 concurrent: 1 语义清晰即可。
   - tag: forward_main
     type: forward
     args:
-      concurrent: 2
-      response_selection: prefer_positive
+      concurrent: 1
       upstreams:
         - tag: doh_alibaba
-          addr: https://dns.alidns.com/dns-query
-          dial_addr: 223.5.5.5
+          addr: "https://dns.alidns.com/dns-query"
+          dial_addr: "223.5.5.5"
           timeout: 5s
-        - tag: udp_volcengine
+
+  # ==================== 显式兜底（保留 UDP，非 DoH）====================
+  - tag: forward_backup
+    type: forward
+    args:
+      concurrent: 1
+      upstreams:
+        - tag: udp_volcengine_backup
           addr: "180.184.1.1:53"
-          timeout: 3s
+          timeout: 5s
+
+  # ==================== fallback：备用路径仅在主路径失败/超时后启动 ====================
+  - tag: fallback_main
+    type: fallback
+    args:
+      primary: "forward_main"
+      secondary: "forward_backup"
+      threshold: 300
+      always_standby: false
+
+  # ==================== TTL 钳制 ====================
+  - tag: ttl_main
+    type: ttl
+    args:
+      min: 60
+      max: 600
 
   # ==================== 主序列 ====================
   - tag: main_sequence
     type: sequence
     args:
-      # 广告判断前置：命中即拒绝，不经过缓存，保证每次拦截都被计数
       - matches: "qname $ad_rules"
         exec: $ad_blackhole
-      # 非广告域名先查缓存
       - exec: $cache_main
       - matches: "has_resp"
         exec: accept
-      # 未命中则转发上游
-      - exec: $forward_main
+      - exec: $fallback_main
+      - matches: "has_resp"
+        exec: $ttl_main
       - exec: accept
 
-  # ==================== 监听 ====================
+  # ==================== 监听（双栈）====================
   - tag: udp_server
     type: udp_server
     args:
       entry: main_sequence
-      listen: :5335
+      listen: ":5335"
 
   - tag: tcp_server
     type: tcp_server
     args:
       entry: main_sequence
-      listen: :5335
+      listen: ":5335"
