@@ -35,7 +35,7 @@ gh workflow run bump-external.yml -f dry_run=true  # 只看有没有新版本
 | [`features/*.configfrag`](../features) | 分层配置片段，标准 `.config` 语法 |
 | [`locks/external.lock`](../locks/external.lock) | 三个 LuCI 包的 repo + commit |
 | [`locks/cores.lock`](../locks/cores.lock) | 预置资源：oxidns / pcdn-detect 版本 + geo 数据地址 |
-| `packages/local/` | 自维护包：预置内核、运行时配置、uci-defaults、登录背景 |
+| `packages/local/` | 自维护包：预置内核、运行时配置、argon 登录背景、uci-defaults |
 | [`scripts/genconfig.py`](../scripts/genconfig.py) | 片段 → `.config` + 期望包清单 |
 | [`scripts/verify.py`](../scripts/verify.py) | 构建前后三道校验 + 生成发布物 |
 | [`scripts/prepare.sh`](../scripts/prepare.sh) | 基座/feeds/外部包/本地包 + 工具链签名 |
@@ -81,6 +81,7 @@ CONFIG_PACKAGE_luci-app-openclash=y
 | 修正 | 原因 |
 |---|---|
 | `hnat-detect` 的 `+ip-tiny` → `+ip-full` | 新基座给 hnat-detect 声明了 `ip-tiny`，而 nikki/mihomo 需要 `ip-full`；两者都提供 `ip` 且互斥，apk 在打包阶段直接报 "unable to select packages" |
+| `config_generate` 的默认 LAN `192.168.1.1` → `192.168.11.1` | 基座默认地址是 192.168.1.1；这里改的是首次启动生成 `/etc/config/network` 的默认值，不动用户后续手动修改 |
 
 修正累积到 3 条以上就该换成正式的 patch 流程，而不是继续堆 sed。
 

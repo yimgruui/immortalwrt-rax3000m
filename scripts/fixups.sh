@@ -20,4 +20,13 @@ if [ -f "$HNAT_MK" ] && grep -q '+ip-tiny' "$HNAT_MK"; then
 	sed -i 's/+ip-tiny/+ip-full/' "$HNAT_MK"
 fi
 
+# ---- 2) 默认 LAN 地址：192.168.1.1 → 192.168.11.1 ----
+# config_generate 在首次启动生成 /etc/config/network 时用这里的默认值；
+# 不修改镜像里的静态配置，用户上手后自行改地址也不会被覆盖。
+CG="$WORK/package/base-files/files/bin/config_generate"
+if [ -f "$CG" ] && grep -q '192\.168\.1\.1' "$CG"; then
+	log "config_generate: 默认 LAN 192.168.1.1 → 192.168.11.1"
+	sed -i 's/192\.168\.1\.1/192.168.11.1/g' "$CG"
+fi
+
 exit 0

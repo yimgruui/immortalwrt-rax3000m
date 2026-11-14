@@ -6,7 +6,7 @@
 #   /etc/oxidns/config.yaml                     ← lite 配置（conffile）
 #   /etc/pcdn-detect/pcdn-detect.toml           ← 调优后的检测配置（conffile）
 #   /etc/uci-defaults/99-rax3000m-files         ← 首次启动对齐 UCI（bundle/版本/时区/启用）
-#   /usr/share/rax3000m/bg1.jpg + 99-rax3000m-bg ← 首次启动替换 argon 登录背景
+#   /www/luci-static/argon/background/rax3000m.jpg ← argon 3.x 登录背景（目录扫描，取唯一图片）
 #
 include $(TOPDIR)/rules.mk
 
@@ -63,9 +63,8 @@ define Package/rax3000m-files/install
 	$(INSTALL_CONF) $(CURDIR)/files/etc/pcdn-detect/pcdn-detect.toml $(1)/etc/pcdn-detect/pcdn-detect.toml
 	$(INSTALL_DIR) $(1)/etc/uci-defaults
 	$(INSTALL_BIN) $(CURDIR)/files/etc/uci-defaults/99-rax3000m-files $(1)/etc/uci-defaults/99-rax3000m-files
-	$(INSTALL_BIN) $(CURDIR)/files/etc/uci-defaults/99-rax3000m-bg $(1)/etc/uci-defaults/99-rax3000m-bg
-	$(INSTALL_DIR) $(1)/usr/share/rax3000m
-	$(INSTALL_DATA) $(CURDIR)/files/usr/share/rax3000m/bg1.jpg $(1)/usr/share/rax3000m/bg1.jpg
+	$(INSTALL_DIR) $(1)/www/luci-static/argon/background
+	$(INSTALL_DATA) $(CURDIR)/files/www/luci-static/argon/background/rax3000m.jpg $(1)/www/luci-static/argon/background/rax3000m.jpg
 endef
 
 $(eval $(call BuildPackage,rax3000m-files))

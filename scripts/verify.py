@@ -206,6 +206,8 @@ def cmd_check_image(args: argparse.Namespace) -> int:
         " —— 配置 `/etc/pcdn-detect/pcdn-detect.toml`，默认已启用检测与自动封禁",
         "- **mihomo geo 数据**（`geoip.metadb` / `geosite.dat`）—— `/etc/nikki/run/`，nikki 可直接用",
         "",
+        "- **LuCI 主题** argon，登录背景已替换（`/www/luci-static/argon/background/`）",
+        "",
         "无线为 MT7981 私有驱动（`mt_wifi`）+ HNAT/WARP 硬件加速。",
     ]
     if run_line:
