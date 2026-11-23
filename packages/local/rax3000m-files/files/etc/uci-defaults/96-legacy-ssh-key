@@ -1,0 +1,16 @@
+#!/bin/sh
+# 早期镜像（<= 2026.11.22）预置过一把全局兜底公钥。
+# sysupgrade 的 keep.d/dropbear 会把 /etc/dropbear/authorized_keys 原样带过来，
+# 所以升级后要精确删掉那一行——只删这把，用户自己加的钥匙不动。
+LEGACY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICE3/0ZwBEywF2Gk0dD4uTTHFTTP0mY/Ea/MqkZxhxRZ"
+for f in /etc/dropbear/authorized_keys /root/.ssh/authorized_keys; do
+	[ -f "$f" ] || continue
+	grep -vF "$LEGACY" "$f" > "$f.tmp" 2>/dev/null
+	if [ -s "$f.tmp" ]; then
+		cat "$f.tmp" > "$f"
+	else
+		rm -f "$f"
+	fi
+	rm -f "$f.tmp"
+done
+exit 0

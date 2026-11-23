@@ -1,0 +1,54 @@
+#!/bin/sh
+# 开机自愈：等系统稳定后探测 80 端口，配置坏了就移除反代插件生成的站点。
+# 目标只有一个：任何情况下 http://<LAN>/ 都能回到 LuCI。
+TAG="nginx-guard"
+
+log() { logger -t "$TAG" "$*"; }
+
+# 探测根路径：只要拿得到任意 HTTP 状态码，就说明 nginx 在正常提供服务。
+# 不用 `wget -q` 的退出码——404/302 也会返回非 0，会把正常状态误判成故障。
+http_ok() {
+	code="$(wget -q -S -O /dev/null -T 5 "http://127.0.0.1/" 2>&1 \
+		| awk '/^  HTTP\//{c=$2} END{print c}')"
+	[ -n "$code" ]
+}
+
+sleep 25
+
+http_ok && exit 0
+log "LuCI :80 无响应，开始检查 nginx 配置"
+
+# nginx-util 把真正在用的配置生成在 /etc/nginx/uci.conf（/etc/init.d/nginx 也是
+# `nginx -t -c $CONF`）；/etc/nginx/nginx.conf 在这套镜像里根本不存在。
+# 裸 `nginx -t` 永远失败，会把“nginx 没起来”误判成“配置坏了”——这里必须和 init
+# 脚本用同一个文件。
+NGX_CONF=/etc/nginx/uci.conf
+[ -f "$NGX_CONF" ] || NGX_CONF=/etc/nginx/nginx.conf
+nginx_test() { nginx -t -c "$NGX_CONF" >/dev/null 2>&1; }
+
+if nginx_test; then
+	log "配置语法正常，重启 nginx"
+	/etc/init.d/nginx restart >/dev/null 2>&1
+	exit 0
+fi
+
+log "配置语法错误，移除反代插件生成的站点配置"
+rm -f /etc/nginx/conf.d/proxy.d/*.conf
+# 旧镜像可能还有 nginx-manager 的产物
+rm -f /etc/nginx/conf.d/luci-manager.conf
+rm -rf /etc/nginx/conf.d/luci-manager
+
+if nginx_test; then
+	log "移除后配置正常，重启 nginx"
+	/etc/init.d/nginx restart >/dev/null 2>&1
+	exit 0
+fi
+
+# 最后手段：恢复反代插件最后一次成功的配置
+latest="$(ls -1dt /etc/nginx-proxy/last-good/* 2>/dev/null | head -1)"
+if [ -n "$latest" ] && [ -d "$latest" ]; then
+	log "恢复备份 $latest"
+	rm -f /etc/nginx/conf.d/proxy.d/*.conf
+	cp -a "$latest/." /etc/nginx/conf.d/proxy.d/ 2>/dev/null
+	nginx_test && /etc/init.d/nginx restart >/dev/null 2>&1
+fi

@@ -1,0 +1,28 @@
+# 外部包锁：每个包钉死 commit，clone 失败或 commit 不存在直接让构建失败。
+# 语法为 KEY=VALUE，供 scripts/prepare.sh `source`。
+# 可选 PKG_n_SUBDIR：插件仓库是多包仓库时，只取该子目录。
+# 升级方式：`tools/bump-external.sh` 或 bump-external 工作流（每天检查）→ build 绿了再合并。
+
+COUNT=4
+
+PKG_1_NAME=openwrt-nikki
+PKG_1_REPO=https://github.com/nikkinikki-org/OpenWrt-nikki
+PKG_1_COMMIT=aaf46bf02a9ab2b5a8ab3fcaa5f84c99e56585bf
+PKG_1_DEST=package/new/OpenWrt-nikki
+
+PKG_2_NAME=luci-app-pcdn-detector
+PKG_2_REPO=https://github.com/Womsxd/luci-app-pcdn-detector
+PKG_2_COMMIT=066bc0ca57546c3e9e32e37bf28efe8dc476024f
+PKG_2_DEST=package/new/luci-app-pcdn-detector
+
+# 自研：轻量 nginx 反向代理（只写 conf.d/proxy.d）
+PKG_3_NAME=luci-app-nginx-proxy
+PKG_3_REPO=https://github.com/yimgruui/luci-app-nginx-proxy
+PKG_3_COMMIT=4b5a033b8e2c4e07ea1c5cf8c44d954c53dd187f
+PKG_3_DEST=package/new/luci-app-nginx-proxy
+
+# 自研：设备端生成 SSH 密钥，私钥一次性领取
+PKG_4_NAME=luci-app-device-key
+PKG_4_REPO=https://github.com/yimgruui/luci-app-device-key
+PKG_4_COMMIT=1bb79a12ae037384c62d4d2e2295ea16630773f5
+PKG_4_DEST=package/new/luci-app-device-key

@@ -1,0 +1,24 @@
+# Web 服务栈：nginx 取代 uhttpd。
+#
+# luci-light 默认依赖 uhttpd；scripts/patch-feeds.sh 在 feeds install 之后把它改成
+# nginx-mod-luci（断言失败即中止构建）。nginx-mod-luci 经 DEFAULT_VARIANT 选中
+# nginx-ssl，并拉入 uwsgi + uwsgi-luci-support + nginx-mod-ubus。
+#
+# 局域网访问策略（用户要求）：80 端口直接提供 LuCI（HTTP，不强制跳 https）；
+# 443 保留 nginx-util 的自签 server 备用。
+
+CONFIG_PACKAGE_nginx-ssl=y
+CONFIG_PACKAGE_nginx-mod-ubus=y
+CONFIG_PACKAGE_nginx-mod-luci=y
+CONFIG_PACKAGE_uwsgi=y
+CONFIG_PACKAGE_uwsgi-luci-support=y
+
+# 轻量反向代理管理（本仓库自研，只写 conf.d/proxy.d，不碰 LuCI 的 nginx 配置）
+CONFIG_PACKAGE_luci-app-nginx-proxy=y
+
+# 本仓库的 nginx 静态配置 + 首启对齐 + 开机自愈（packages/local/web-stack-files）
+CONFIG_PACKAGE_web-stack-files=y
+
+# uhttpd 一次性移除：任何残余依赖都应该在 check-config 阶段暴露
+# CONFIG_PACKAGE_uhttpd is not set
+# CONFIG_PACKAGE_uhttpd-mod-ubus is not set

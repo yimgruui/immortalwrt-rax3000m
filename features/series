@@ -1,0 +1,11 @@
+# 特性层顺序。生成 .config 时按此顺序拼接，同一 CONFIG 键后出现的覆盖先出现的。
+#
+# 单变体：本仓库只产出一个固件。若要加变体，新增一个 series 文件
+# （如 features/series-minimal），并在 workflow 里按需选择，而不是复制多份 .config。
+
+00-base
+10-mtwifi
+40-ops
+20-proxy
+30-dns
+90-lab

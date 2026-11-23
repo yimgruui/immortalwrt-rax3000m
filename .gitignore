@@ -1,0 +1,20 @@
+# 构建产物与临时目录
+/openwrt/
+/dist/
+/build-artifacts/
+*.log
+.ghcache/
+__pycache__/
+
+# 构建期下载的预置资源（scripts/fetch-assets.sh 生成，不入库）
+/packages/local/rax3000m-files/files/usr/bin/pcdn-detect
+/packages/local/mihomo-geodata/files/
+
+# gh 运行日志缓存（XDG_CACHE_HOME 落在这里）
+.cache/
+.ghcache/
+
+# 本地下载的固件产物
+/dist-final/
+/dist-*/
+/rel-*/

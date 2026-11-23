@@ -1,0 +1,11 @@
+# 特性层顺序。生成 .config 时按此顺序拼接，同一 CONFIG 键后出现的覆盖先出现的。
+#
+# 每个设备一份 series：换设备只换目录，不复制 .config，也不改脚本。
+# 想给同一设备做变体（如 minimal），再加一个 series-*.txt 并在 workflow 里选择。
+
+00-base
+10-mtwifi
+40-ops
+20-proxy
+50-web
+90-lab

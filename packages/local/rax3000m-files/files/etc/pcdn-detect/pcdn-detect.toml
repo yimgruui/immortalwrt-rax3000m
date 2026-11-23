@@ -1,0 +1,92 @@
+# pcdn-detect 配置（C 版内核，TOML）
+#
+# 部署位置：/etc/pcdn-detect/pcdn-detect.toml（conffile，升级不覆盖）
+# 命令行参数优先于本文件。
+#
+# 本版本相对默认配置的调整（见 docs/README.md「pcdn-detector 调参」）：
+#   threshold 20→30、window 60s→120s  降低 BT/多设备 4K 并发时的误报
+#   num_blocks 4→8                    千兆满速少丢包（只多 256KB 内存）
+#   peer_limit / max_ports 显式写死    避免上游默认值变化导致行为漂移
+#   ban_ttl 30m→1h                    减少“封了又解”的抖动
+#   启用 [upnp]                       阻止 PCDN 自行打洞
+#   [full_ban] 保持关闭               先观察一周再决定是否升级为全端口封禁
+
+[detect]
+# 同一设备同一端口在窗口内出现的不同远端公网 IP 数达到该值即判定疑似 PCDN
+threshold = 30
+
+# 滑动窗口，支持 "60s" / "5m" / "1h"，也接受整数秒
+window = "120s"
+
+# 持续提示时长：期间该端口仍有流量则刷新计时；超时无流量则静默
+alert_duration = "10m"
+
+# 检测扫描间隔
+interval = "2s"
+
+[capture]
+# 监听网卡（必填）。若新增 guest/IoT 网桥，确认其流量仍经过该网卡
+interface = "br-lan"
+
+promisc = true
+
+# 环形缓冲：总内存 = block_size * num_blocks
+frame_size = 2048
+block_size = 65536
+num_blocks = 8
+snaplen = 256
+
+# "udp" 仅 UDP（默认，CPU 最省）；"tcp" 仅 TCP；"all" 两者都抓（负载约翻倍）
+protocol = "udp"
+
+[memory]
+low_memory = false
+peer_limit = 1000
+max_ports = 512
+
+[log]
+level = "warn"
+timezone = "Asia/Shanghai"
+hide_address = false
+
+[http]
+enabled = true
+# 仅监听本地，由 LuCI 通过 rpcd 代理访问；不要改成 0.0.0.0
+listen = "127.0.0.1:8081"
+token = ""
+device_ip_limit = 200
+
+[filter]
+# "whitelist"：名单内不检测（空名单=检测全部）；"blacklist"：只检测名单内
+list_mode = "whitelist"
+
+# 建议把 NAS / 下载机加进来，避免 BT/PT 被误判（示例，按需取消注释）：
+# [[filter.whitelist]]
+# mac = "aa:bb:cc:dd:ee:ff"
+
+[firewall]
+enabled = true
+backend = "nftables"
+ban_both = true
+# false = 只封已触发告警的端口（精准）；true = 封所有活跃告警
+ban_active_alerts = false
+timeout = "5s"
+
+[firewall.nftables]
+table = "pcdn_detect"
+set = "banned"
+hook = "prerouting"
+input_hook = "input"
+ban_ttl = "1h"
+
+# ===== UPnP 拦截：阻止 PCDN 通过 UPnP 自动创建端口映射 =====
+[upnp]
+mode = "device"
+ports = [1900, 5000]
+
+# ===== 全端口封禁（增强选项，默认关闭）=====
+# 对累计多次触发的设备升级为全端口封禁，仅放行基础服务端口。
+# [full_ban]
+# mode = "device"
+# threshold = 5
+# allow = [53, 123, 67, 68, 546, 547]

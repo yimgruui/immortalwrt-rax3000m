@@ -1,0 +1,287 @@
+name: build
+
+# 一套模板 → 多设备：devices/*/device.conf 决定 matrix，每个设备独立 job、独立产物。
+# 触发：
+#   * push 到 main / test：改设备模板、特性片段、本地包、锁文件、脚本；
+#   * bump-external 检测到上游更新 → 派发；
+#   * 手动 workflow_dispatch（可选只构建某个设备）。
+# Release 只在 main 上创建；test 分支只留 artifact，不发布（用户要求）。
+on:
+  workflow_dispatch:
+    inputs:
+      device:
+        description: '只构建某个设备 id（留空=全部）'
+        required: false
+      base_commit:
+        description: '复现历史构建时填当时的 commit（留空=用设备模板钉住的值）'
+        required: false
+      clean_build:
+        description: '不使用编译缓存（全量重编）'
+        type: boolean
+        default: false
+  push:
+    branches: [main, test]
+    paths:
+      - 'devices/**'
+      - 'features/**'
+      - 'packages/**'
+      - 'locks/**'
+      - 'scripts/**'
+      - '.github/workflows/build.yml'
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  TZ: Asia/Shanghai
+
+jobs:
+  plan:
+    runs-on: ubuntu-22.04
+    outputs:
+      matrix: ${{ steps.m.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: m
+        run: |
+          device='${{ inputs.device }}'
+          if [ -n "$device" ]; then
+            [ -f "devices/$device/device.conf" ] || { echo "::error::未知设备 $device"; exit 1; }
+            echo "matrix={\"include\":[{\"device\":\"$device\"}]}" >> "$GITHUB_OUTPUT"
+          else
+            echo "matrix=$(python3 scripts/devices.py --matrix)" >> "$GITHUB_OUTPUT"
+          fi
+          echo "本次设备：$(python3 scripts/devices.py --list | paste -sd' ' -)"
+
+  build:
+    needs: plan
+    runs-on: ubuntu-22.04
+    timeout-minutes: 400
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 载入设备配置
+        run: |
+          set -a
+          . "devices/${{ matrix.device }}/device.conf"
+          set +a
+          for k in DEVICE_ID DEVICE_NAME TARGET_NAME UPSTREAM_REPO UPSTREAM_BRANCH UPSTREAM_COMMIT BIN_DIR SIZE_MAX_MB; do
+            echo "$k=${!k}" >> "$GITHUB_ENV"
+          done
+          echo "设备：$DEVICE_NAME（$DEVICE_ID）"
+
+      - name: 释放磁盘并安装依赖
+        run: |
+          df -hT /home
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          sudo apt-get update
+          sudo apt-get install -y build-essential clang flex bison g++ gawk gcc-multilib \
+            g++-multilib gettext git libncurses-dev libssl-dev python3-setuptools rsync \
+            swig unzip zlib1g-dev file wget libelf-dev
+          avail=$(df --output=avail -BG /home | tail -1 | tr -dc '0-9')
+          echo "可用空间: ${avail}G"
+          [ "${avail:-0}" -ge 25 ] || { echo "::error::磁盘不足，需要至少 25G"; exit 1; }
+
+      - name: 解析基座 commit
+        id: base
+        env:
+          OVERRIDE: ${{ inputs.base_commit }}
+        run: |
+          if [ -n "$OVERRIDE" ]; then
+            commit="$OVERRIDE"
+          elif [ -n "$UPSTREAM_COMMIT" ]; then
+            commit="$UPSTREAM_COMMIT"
+          else
+            commit=""
+            for i in 1 2 3; do
+              commit=$(git ls-remote "$UPSTREAM_REPO" "refs/heads/$UPSTREAM_BRANCH" | awk '{print $1}' || true)
+              [ -n "$commit" ] && break
+              echo "第 $i 次获取 HEAD 失败，5s 后重试"
+              sleep 5
+            done
+            [ -n "$commit" ] || { echo "::error::拿不到 $UPSTREAM_REPO 的 $UPSTREAM_BRANCH HEAD（网络问题？）"; exit 1; }
+          fi
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+          echo "基座: $UPSTREAM_REPO @ $UPSTREAM_BRANCH → $commit"
+
+      - name: 下载预置资源（pcdn / geo）
+        run: bash scripts/fetch-assets.sh
+        env:
+          GITHUB_MIRROR: ${{ vars.GITHUB_MIRROR }}
+
+      - name: 准备源码（基座/feeds/外部包/本地包）并计算工具链签名
+        id: prepare
+        run: bash scripts/prepare.sh --device "devices/${{ matrix.device }}" --commit "${{ steps.base.outputs.commit }}"
+
+      # 只缓存工具链与 host 工具（不含 target 包）。
+      # 理由：工具链能否复用由签名唯一决定，同签名 = 内容完全一致，复用绝对安全；
+      # 而 target 包缓存一旦“复用”就会跳过错过的包，等于把旧包打进新固件。
+      - name: 恢复工具链缓存
+        id: tc
+        if: inputs.clean_build != true
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            openwrt/staging_dir/toolchain-*
+            openwrt/staging_dir/host
+            openwrt/staging_dir/hostpkg
+          key: owrt-tc-${{ matrix.device }}-${{ steps.prepare.outputs.sig }}-${{ hashFiles('devices/**','features/**','locks/**','scripts/**') }}
+          restore-keys: |
+            owrt-tc-${{ matrix.device }}-${{ steps.prepare.outputs.sig }}-
+
+      # 解压出来的 mtime 是“上次构建的时间”，比刚 clone 的源码旧，
+      # make 会判定整条工具链过期而重编——缓存白存。刷新时间戳即可，
+      # 因为签名的定义就是“工具链内容相同”，不存在内容与时间不一致的问题。
+      - name: 刷新工具链缓存时间戳
+        if: inputs.clean_build != true
+        run: |
+          # 只处理普通文件：host/bin 下多数是“指向系统工具”的软链接，
+          # touch 会跟随链接去改 /usr/bin 里的文件，直接 Permission denied。
+          for d in openwrt/staging_dir/toolchain-* openwrt/staging_dir/host openwrt/staging_dir/hostpkg; do
+            [ -e "$d" ] || continue
+            echo "touch $d"
+            find "$d" -type f -exec touch {} + 2>/dev/null || true
+          done
+
+      - name: 生成 .config 并校验
+        run: |
+          mkdir -p build-artifacts
+          python3 scripts/genconfig.py \
+            --device "devices/${{ matrix.device }}" \
+            --features-dir features \
+            --out openwrt/.config \
+            --expected build-artifacts/expected-packages.txt \
+            --forbidden build-artifacts/forbidden-packages.txt
+          ( cd openwrt && make defconfig )
+          # 哨兵：HIDDEN 的翻译包只能靠 CONFIG_LUCI_LANG_* 带进来。
+          # 片段里不再逐包写 CONFIG_PACKAGE_luci-i18n-*，这里确认语言包真进了 .config。
+          grep -qx 'CONFIG_PACKAGE_luci-i18n-device-key-zh-cn=y' openwrt/.config
+          grep -qx 'CONFIG_PACKAGE_luci-i18n-device-key-zh-tw=y' openwrt/.config
+          python3 scripts/verify.py check-config \
+            --config openwrt/.config \
+            --expected build-artifacts/expected-packages.txt \
+            --forbidden build-artifacts/forbidden-packages.txt \
+            --device "devices/${{ matrix.device }}"
+          python3 scripts/verify.py check-coverage \
+            --dirs packages/local --config openwrt/.config
+
+      - name: 下载源码包
+        run: |
+          cd openwrt
+          make download -j8
+          # 只看 dl/ 顶层：包压缩包都在这一层；go-mod-cache 里有大量合法的几十字节文件。
+          bad=$(find dl -maxdepth 1 -type f \( -name '*.tar.*' -o -name '*.zip' -o -name '*.gz' \) -size -1024c)
+          if [ -n "$bad" ]; then
+            echo "::error::存在小于 1KB 的压缩包下载，可能已损坏："
+            echo "$bad"
+            exit 1
+          fi
+
+      - name: 编译
+        run: |
+          cd openwrt
+          set -o pipefail
+          make -j"$(nproc)" 2>&1 | tee build.log
+
+      - name: 校验产物并生成发布物
+        run: |
+          python3 scripts/verify.py check-image \
+            --device "devices/${{ matrix.device }}" \
+            --bin-root openwrt \
+            --expected build-artifacts/expected-packages.txt \
+            --forbidden build-artifacts/forbidden-packages.txt \
+            --dist dist \
+            --commit "${{ steps.base.outputs.commit }}" \
+            --run-id "${{ github.run_id }}" \
+            --repo "${{ github.repository }}" \
+            --upstream-repo "$UPSTREAM_REPO" \
+            --upstream-branch "$UPSTREAM_BRANCH" \
+            --features "$(grep -v '^#' "devices/${{ matrix.device }}/series" | grep -v '^$' | paste -sd, -)"
+
+      - name: 保存工具链缓存
+        if: success() && inputs.clean_build != true && steps.tc.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            openwrt/staging_dir/toolchain-*
+            openwrt/staging_dir/host
+            openwrt/staging_dir/hostpkg
+          key: ${{ steps.tc.outputs.cache-primary-key }}
+
+      - name: 上传固件
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ matrix.device }}
+          path: dist/**
+          retention-days: 14
+
+      - name: 失败时定位（V=s 重跑 + 保留现场）
+        if: failure()
+        run: |
+          cd openwrt
+          echo "===== 磁盘 ====="
+          df -hT /home || true
+          echo "===== 重跑 package/install（V=s）====="
+          make package/install V=s 2>&1 | tail -200 || true
+
+      - name: 失败时上传现场
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failure-${{ matrix.device }}
+          path: |
+            openwrt/build.log
+            openwrt/logs/**
+            openwrt/bin/targets/**/*.itb
+            openwrt/bin/targets/**/*.manifest
+          if-no-files-found: ignore
+          retention-days: 3
+
+  # 只在 main 上发布；test 分支（用户要求的测试期）只留 artifact。
+  release:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: firmware-*
+          path: dist
+
+      - name: 逐个设备发布
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          day="$(TZ=Asia/Shanghai date +%Y.%m.%d)"
+          for dir in dist/firmware-*; do
+            [ -d "$dir" ] || continue
+            dev="${dir#dist/firmware-}"
+            tag="${dev}-${day}-${{ github.run_number }}"
+            gh release create "$tag" "$dir"/* \
+              --title "$tag" \
+              --notes-file "$dir/release-notes.md"
+          done
+
+      - name: 每个设备只保留最新 3 个 Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          for dev in $(python3 scripts/devices.py --list); do
+            gh release list --limit 100 --json tagName --jq '.[].tagName' \
+              | grep -E "^${dev}-[0-9]{4}\." | tail -n +4 \
+              | while read -r tag; do
+                  echo "删除旧 Release：$tag"
+                  gh release delete "$tag" --yes --cleanup-tag || true
+                done
+          done

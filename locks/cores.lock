@@ -1,0 +1,20 @@
+# 预置资源锁：内核/服务二进制 + 一份 geo 数据。
+#
+# 二进制钉 release 版本（并校验 SHA256）；
+# geo 数据是滚动 tag `latest`，默认跟随最新（内容天天变），需要冻结时填 SHA256 即可。
+
+# --- pcdn-detector：C 版（0.38MB、无 GC），与 TOML 里“C 版本没有 GC”的说明对应 ---
+PCDN_REPO=Womsxd/pcdn-detector-c
+PCDN_VERSION=v0.0.1-beta.2
+PCDN_ASSET=pcdn-detect-arm64
+PCDN_SHA256=843872f13def6da0362be3c66b02de3c536341d1315ba767b2f504f740eff88d
+
+# --- mihomo geo 数据（MetaCubeX 用滚动 tag 发布）---
+GEODATA_BASE=https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest
+GEODATA_GEOIP_ASSET=geoip.metadb
+GEODATA_GEOSITE_ASSET=geosite.dat
+GEODATA_GEOIP_SHA256=
+GEODATA_GEOSITE_SHA256=
+
+# 可选 GitHub 加速前缀，例如 https://ghfast.top；镜像失败会自动回退直连
+GITHUB_MIRROR=${GITHUB_MIRROR:-}
