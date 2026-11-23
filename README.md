@@ -162,8 +162,7 @@ uci set dropbear.@dropbear[0].PasswordAuth='off' && uci commit dropbear
 
 ## 上游修正
 
-- `scripts/fixups.sh`：checkout 之后、feeds 之前的 sed 修正（hnat-detect 的 ip-tiny→ip-full、
-  默认 LAN 192.168.1.1→192.168.11.1）；
+- `scripts/fixups.sh`：checkout 之后、feeds 之前的 sed 修正（默认 LAN 192.168.1.1→192.168.11.1）；
 - `scripts/patch-feeds.sh`：feeds install 之后改 feed 包定义（luci-light 的 uhttpd→nginx-mod-luci、
   删掉官方 SSH-Keys 菜单），每条都带正反断言。
 
