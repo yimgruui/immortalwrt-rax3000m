@@ -94,7 +94,9 @@ gh workflow run build.yml -f clean_build=true      # 不用缓存
   （自动写 `firewall.npxy_<port>`）；
 - 只写 `/etc/nginx/conf.d/proxy.d/*.conf`，不碰 `uci.conf` / `luci.locations`，改坏也只影响反代；
 - 应用时先渲染到临时目录，`nginx -t -c /etc/nginx/uci.conf` 通过才替换，失败自动回滚上一版；
-- 保存即应用，列表里的勾选框可直接启用/停用；「查看配置」可看生成的 `.conf`。
+- 保存即应用，列表里的勾选框可直接启用/停用；「查看配置」可看生成的 `.conf`；
+- 「额外指令」可逐行插入 `location` 的 nginx 指令（如 qBittorrent 需要的
+  `proxy_cookie_path  /  "/; Secure";`），保存前校验、写错由 `nginx -t` 拦下并回滚。
 
 ### 开机自愈
 
