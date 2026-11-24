@@ -18,7 +18,7 @@ git clone https://github.com/yimgruui/immortalwrt-rax3000m.git
 
 | 项 | 说明 |
 |---|---|
-| Web 服务 | nginx（不是 uhttpd），80 端口直接进 LuCI，不做强制 https |
+| Web 服务 | nginx（不是 uhttpd），80 → 443 强制跳转，LuCI 走 https |
 | 反向代理 | `luci-app-nginx-proxy`：域名/端口 → 内网服务，支持 TLS、WebSocket、Basic Auth、放行 WAN |
 | DNS / 去广告 | nikki（mihomo）保持默认 fake-ip，`category-ads-all` + `adblock` 规则 REJECT |
 | SSH | 不预置任何全局公钥；每台设备现场生成专属密钥（`luci-app-device-key`） |
@@ -81,10 +81,11 @@ gh workflow run build.yml -f clean_build=true      # 不用缓存
   的 `+uhttpd` 换成 `+nginx-mod-luci`（并删 `+uhttpd-mod-ubus`），改完带断言：上游结构一变就构建失败，
   不会悄悄把 uhttpd 装回来。
 - `nginx-mod-luci` 自动选中 `nginx-ssl`，并拉入 `uwsgi` / `uwsgi-luci-support` / `nginx-mod-ubus`。
-- **80 端口直接提供 LuCI（HTTP），不跳 https**：内网没有可信证书，强制跳转只会添乱。
-  由 `packages/local/web-stack-files` 的 `/etc/nginx/conf.d/luci-http.conf` 提供。
-- 443 保留 nginx-util 的自签 server；要正式证书用 acme（`/etc/ssl/acme/*.crt`），
-  或在反代插件里上传证书后给站点勾选 TLS。
+- **80 一律 301 跳到 https**：由 `packages/local/web-stack-files` 的
+  `/etc/nginx/conf.d/luci-http.conf` 提供（`return 301 https://$host$request_uri;`）。
+  想改回 80 直连就把这行换成 `include /etc/nginx/conf.d/luci.locations;`。
+- 443 保留 nginx-util 的自签 server（浏览器首次会提示证书不受信）；要正式证书用 acme
+  （`/etc/ssl/acme/*.crt`），或在反代插件里上传证书后给站点勾选 TLS。
 
 ### 反向代理（luci-app-nginx-proxy）
 

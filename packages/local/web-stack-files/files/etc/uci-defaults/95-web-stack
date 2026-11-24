@@ -2,7 +2,8 @@
 # 首次启动对齐 nginx 行为（幂等）。必须晚于 nginx-util 的 uci-defaults（60_*）。
 [ -n "$IPKG_INSTROOT" ] && exit 0
 
-# 1) 去掉 nginx-util 默认的 80→443 跳转（用户明确要求：内网没有证书就不跳）
+# 1) 80→443 跳转由本包的 conf.d/luci-http.conf 提供（301），
+#    这里去掉 nginx-util 自带的 _redirect2ssl，避免两条 80 server 打架
 uci -q delete nginx._redirect2ssl
 # 443 仍保留，用自签证书；配了 acme 证书后由 luci-app-nginx-proxy 使用
 uci -q set nginx._lan.uci_manage_ssl='self-signed'
@@ -23,8 +24,7 @@ fi
 /etc/init.d/nginx-guard enable >/dev/null 2>&1
 /etc/init.d/nginx enable >/dev/null 2>&1
 
-# 4) 60_* 可能已经带着 _redirect2ssl 起过一次 nginx，这里重启让新配置立即生效，
-#    避免首次开机到下次重启之间仍然被 302 到 https。
+# 4) 60_* 可能已经带着 _redirect2ssl 起过一次 nginx，这里重启让新配置（301 跳转）立即生效。
 if pidof nginx >/dev/null 2>&1; then
 	/etc/init.d/nginx restart >/dev/null 2>&1
 fi
