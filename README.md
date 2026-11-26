@@ -23,7 +23,7 @@ git clone https://github.com/yimgruui/immortalwrt-rax3000m.git
 | DNS / 去广告 | nikki（mihomo）保持默认 fake-ip，`category-ads-all` + `adblock` 规则 REJECT |
 | SSH | 不预置任何全局公钥；每台设备现场生成专属密钥（`luci-app-device-key`） |
 | 预置二进制 | pcdn-detect、geoip/geosite，均钉版本 + SHA256，开箱可用 |
-| 语言 | 简体 / 繁体中文随 LuCI 自动切换 |
+| 语言 | 简体中文随 LuCI 自动切换 |
 | 产物 | sysupgrade / recovery 镜像 + sha256sums + build-manifest.json + release-notes.md |
 
 ## 目录

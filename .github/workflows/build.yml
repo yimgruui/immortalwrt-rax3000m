@@ -163,7 +163,6 @@ jobs:
           # 哨兵：HIDDEN 的翻译包只能靠 CONFIG_LUCI_LANG_* 带进来。
           # 片段里不再逐包写 CONFIG_PACKAGE_luci-i18n-*，这里确认语言包真进了 .config。
           grep -qx 'CONFIG_PACKAGE_luci-i18n-device-key-zh-cn=y' openwrt/.config
-          grep -qx 'CONFIG_PACKAGE_luci-i18n-device-key-zh-tw=y' openwrt/.config
           python3 scripts/verify.py check-config \
             --config openwrt/.config \
             --expected build-artifacts/expected-packages.txt \
@@ -229,6 +228,12 @@ jobs:
           cd openwrt
           echo "===== 磁盘 ====="
           df -hT /home || true
+          if [ ! -f private-key.pem ] && grep -qx 'CONFIG_SIGNED_PACKAGES=y' .config \
+             && [ -x staging_dir/host/bin/openssl ]; then
+            echo "===== 生成 apk 签名密钥（诊断用，避免误报）====="
+            staging_dir/host/bin/openssl ecparam -name prime256v1 -genkey -noout -out private-key.pem
+            staging_dir/host/bin/openssl ec -in private-key.pem -pubout > public-key.pem
+          fi
           echo "===== 重跑 package/install（V=s）====="
           make package/install V=s 2>&1 | tail -200 || true
 
