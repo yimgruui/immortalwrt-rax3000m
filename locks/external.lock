@@ -18,11 +18,11 @@ PKG_2_DEST=package/new/luci-app-pcdn-detector
 # 自研：轻量 nginx 反向代理（只写 conf.d/proxy.d）
 PKG_3_NAME=luci-app-nginx-proxy
 PKG_3_REPO=https://github.com/yimgruui/luci-app-nginx-proxy
-PKG_3_COMMIT=b675b4afdaf791ea45f16b4bad1df68a1ed1f930
+PKG_3_COMMIT=9a77fa23e5cce209f4f76ccc03bb9ca21bb3793b
 PKG_3_DEST=package/new/luci-app-nginx-proxy
 
 # 自研：设备端生成 SSH 密钥，私钥一次性领取
 PKG_4_NAME=luci-app-device-key
 PKG_4_REPO=https://github.com/yimgruui/luci-app-device-key
-PKG_4_COMMIT=028757924b990b746a44c23abba5d16486546cfc
+PKG_4_COMMIT=0bc843f8afe0e033b54c4b5cb17f86cbba110abf
 PKG_4_DEST=package/new/luci-app-device-key
